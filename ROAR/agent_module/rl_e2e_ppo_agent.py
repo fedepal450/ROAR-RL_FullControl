@@ -133,12 +133,17 @@ class RLe2ePPOAgent(Agent):
             if abs(dx) < self.thres and abs(dz) < self.thres:
                 curr_lb += 1
             else:
-                num -= 1
-                self.bbox_list.append(LineBBox(t1, t2))
-                curr_lb = self.look_back #update curr_lb
-                curr_idx = self.int_counter * self.interval
-                if num == 0:
-                    return
+                if num > 0:
+                    num -= 1
+                    self.bbox_list.append(LineBBox(t1, t2))
+                    curr_lb = self.look_back #update curr_lb
+                    curr_idx = self.int_counter * self.interval
+                else:
+                    self.bbox_list.pop(0)
+                    self.bbox_list.append(LineBBox(t1, t2))
+                    curr_lb = self.look_back  # update curr_lb
+                    curr_idx = self.int_counter * self.interval
+
         # no next bbox
         print("finished all the iterations!")
         self.finished = True
