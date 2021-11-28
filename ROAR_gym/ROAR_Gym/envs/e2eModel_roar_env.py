@@ -63,6 +63,8 @@ class ROARppoEnvE2E(ROAREnv):
         self.frame_reward = 0
         self.highscore = -1000
         self.highest_chkpt = 0
+        self.speeds = []
+        self.prev_int_counter = 0
 
     def step(self, action: Any) -> Tuple[Any, float, bool, dict]:
         obs = []
@@ -119,17 +121,21 @@ class ROARppoEnvE2E(ROAREnv):
 
         if self.crash_check:
             return 0
-
         # reward computation
+        current_speed = self.agent.bbox.get_directional_velocity(self.agent.vehicle.velocity.x,self.agent.vehicle.velocity.z)
+        self.speeds.append(current_speed)
 
-        reward += 0.1 * self.agent.bbox.get_directional_velocity(self.agent.vehicle.velocity.x,self.agent.vehicle.velocity.z)# (Vehicle.get_speed(self.agent.vehicle) - self.prev_speed)
-        # reward += abs(self.agent.vehicle.control.steering)
-        # NOTE: potentially want to reset or skip this line to avoid neg reward at frame when line is crossed
-        # reward += np.clip(self.prev_dist_to_strip - curr_dist_to_strip, -10, 10)
         if self.agent.cross_reward > self.prev_cross_reward:
+            num_crossed = self.agent.int_counter - self.prev_int_counter
+            #speed reward
+            reward+= np.average(self.speeds) * num_crossed
+            self.speeds=[]
+            self.prev_int_counter =self.agent.int_counter
+            #crossing reward
             reward += 5 * (self.agent.cross_reward - self.prev_cross_reward)
+
         if self.carla_runner.get_num_collision() > 0:
-            reward -= 1000
+            reward -= 100#0 /(min(total_num_cross,10))
             self.crash_check = True
 
         # log prev info for next reward computation
