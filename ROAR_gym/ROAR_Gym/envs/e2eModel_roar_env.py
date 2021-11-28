@@ -121,7 +121,8 @@ class ROARppoEnvE2E(ROAREnv):
             return 0
 
         # reward computation
-        reward += 0.1 * Vehicle.get_speed(self.agent.vehicle)# (Vehicle.get_speed(self.agent.vehicle) - self.prev_speed)
+
+        reward += 0.1 * self.agent.bbox.get_directional_velocity(self.agent.vehicle.velocity.x,self.agent.vehicle.velocity.z)# (Vehicle.get_speed(self.agent.vehicle) - self.prev_speed)
         # reward += abs(self.agent.vehicle.control.steering)
         # NOTE: potentially want to reset or skip this line to avoid neg reward at frame when line is crossed
         # reward += np.clip(self.prev_dist_to_strip - curr_dist_to_strip, -10, 10)

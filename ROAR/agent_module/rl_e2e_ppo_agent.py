@@ -246,3 +246,7 @@ class LineBBox(object):
         middle=scipy.stats.norm(size//2, size//2).pdf(size//2)
         return [scipy.stats.norm(size//2, size//2).pdf(i)/middle*0.5 for i in  range(size)]
 
+    def get_directional_velocity(self,x,z):
+        dz, dx = self.z2 - self.z1, self.x2 - self.x1
+        dx,dz=[dx,dz]/np.linalg.norm([dx,dz])
+        return dx*x+dz*z
