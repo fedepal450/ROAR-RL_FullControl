@@ -14,7 +14,7 @@ import numpy as np
 from ROAR.utilities_module.data_structures_models import Transform, Location
 import cv2
 from typing import Optional
-import scipy.stats
+
 
 class RLe2ePPOAgent(Agent):
     def __init__(self, vehicle: Vehicle, agent_settings: AgentConfig, **kwargs):
@@ -47,7 +47,6 @@ class RLe2ePPOAgent(Agent):
         self.thres = self.kwargs.get('thres', 1e-3)
 
         self.int_counter = 0
-        self.cross_reward=0
         self.counter = 0
         self.finished = False
         self.curr_dist_to_strip = 0
@@ -79,9 +78,9 @@ class RLe2ePPOAgent(Agent):
         if not self.finished:
             while(True):
                 crossed, dist = self.bbox.has_crossed(self.vehicle.transform)
+
                 if crossed:
                     self.int_counter += 1
-                    self.cross_reward+=crossed
                     self._get_next_bbox()
                 else:
                     break
@@ -116,6 +115,7 @@ class RLe2ePPOAgent(Agent):
 
     def _get_bbox_list(self, num):
         # make sure no index out of bound error
+        self.bbox_list = []#clear bbox_list
         curr_lb = self.look_back
         curr_idx = self.int_counter * self.interval
         while curr_idx + curr_lb < len(self.plan_lst):
@@ -139,10 +139,7 @@ class RLe2ePPOAgent(Agent):
                     curr_lb = self.look_back #update curr_lb
                     curr_idx = self.int_counter * self.interval
                 else:
-                    self.bbox_list.pop(0)
-                    self.bbox_list.append(LineBBox(t1, t2))
-                    curr_lb = self.look_back  # update curr_lb
-                    curr_idx = self.int_counter * self.interval
+                    return
 
         # no next bbox
         print("finished all the iterations!")
@@ -157,9 +154,7 @@ class LineBBox(object):
         self.pos_true = True
         self.thres = 1e-2
         self.eq = self._construct_eq()
-        self.dis = self._construct_dis()
         self.strip_list = None
-        self.size=20
 
         if self.eq(self.x1, self.z1) > 0:
             self.pos_true = False
@@ -188,41 +183,10 @@ class LineBBox(object):
 
         return linear_eq
 
-    def _construct_dis(self):
-        dz, dx = self.z2 - self.z1, self.x2 - self.x1
-
-        if abs(dz) < self.thres:
-            def vertical_dis(x, z):
-                return z - self.z2
-
-            return vertical_dis
-        elif abs(dx) < self.thres:
-            def horizontal_dis(x, z):
-                return x - self.x2
-
-            return horizontal_dis
-
-        slope_ = dz / dx
-        self.slope = -1 / slope_
-        # print("tilted strip with slope {}".format(self.slope))
-        self.intercept = -(self.slope * self.x2) + self.z2
-
-        def linear_dis(x, z):
-            z_diff=z - self.z2
-            x_diff=x - self.x2
-            dis=np.sqrt(np.square(z_diff)+np.square(x_diff))
-            angle1=np.abs(np.arctan(slope_))
-            angle2=np.abs(np.arctan(z_diff/x_diff))
-            return dis*np.sin(np.abs(angle2-angle1))
-
-        return linear_dis
-
     def has_crossed(self, transform: Transform):
         x, z = transform.location.x, transform.location.z
         dist = self.eq(x, z)
-        crossed=dist > 0 if self.pos_true else dist < 0
-        middle=scipy.stats.norm(self.size//2, self.size//2).pdf(self.size//2)
-        return (scipy.stats.norm(self.size//2, self.size//2).pdf(self.size//2-self.dis(x, z))/middle if crossed else 0, dist)
+        return (dist > 0 if self.pos_true else dist < 0, dist)
 
     def get_visualize_locs(self, size=10):
         if self.strip_list is not None:
@@ -245,13 +209,5 @@ class LineBBox(object):
         self.strip_list = []
         for i in range(len(xs)):
             self.strip_list.append(Location(x=xs[i], y=0, z=zs[i]))
+
         return self.strip_list
-
-    def get_value(self,size=10):
-        middle=scipy.stats.norm(size//2, size//2).pdf(size//2)
-        return [scipy.stats.norm(size//2, size//2).pdf(i)/middle*0.5 for i in  range(size)]
-
-    def get_directional_velocity(self,x,z):
-        dz, dx = self.z2 - self.z1, self.x2 - self.x1
-        dx,dz=[dx,dz]/np.linalg.norm([dx,dz])
-        return dx*x+dz*z
