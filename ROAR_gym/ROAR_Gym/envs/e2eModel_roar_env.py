@@ -78,9 +78,12 @@ class ROARppoEnvE2E(ROAREnv):
         rewards = []
 
         for i in range(FRAME_STACK):
-            self.agent.kwargs["control"] = VehicleControl(throttle=action[i*3+0],
-                                                          steering=action[i*3+1],
-                                                          braking=action[i*3+2])
+            throttle=np.sqrt(action[i*3+0])
+            steering=np.sign(action[i*3+1])*np.max([np.square(action[i*3+1])-0.5,0])
+            braking=np.max([np.square(action[i*3+2])-0.9,0])
+            self.agent.kwargs["control"] = VehicleControl(throttle=throttle,
+                                                          steering=steering,
+                                                          braking=braking)
             ob, reward, is_done, info = super(ROARppoEnvE2E, self).step(action)
             obs.append(ob)
             rewards.append(reward)
@@ -123,11 +126,11 @@ class ROARppoEnvE2E(ROAREnv):
 
     def get_reward(self) -> float:
         # prep for reward computation
-        reward = -0.1*(1-self.agent.vehicle.control.throttle+10*self.agent.vehicle.control.braking+0.2*abs(self.agent.vehicle.control.steering))
+        reward = -0.4*(1-self.agent.vehicle.control.throttle+100*self.agent.vehicle.control.braking+abs(self.agent.vehicle.control.steering))
         curr_dist_to_strip = self.agent.curr_dist_to_strip
 
         if self.crash_check:
-            return 0
+            return reward
         # reward computation
         current_speed = self.agent.bbox.get_directional_velocity(self.agent.vehicle.velocity.x,self.agent.vehicle.velocity.z)
         self.speeds.append(current_speed)
@@ -139,7 +142,7 @@ class ROARppoEnvE2E(ROAREnv):
             self.speeds=[]
             self.prev_int_counter =self.agent.int_counter
             #crossing reward
-            reward += 10 * (self.agent.cross_reward - self.prev_cross_reward)
+            reward += 20 * (self.agent.cross_reward - self.prev_cross_reward)
 
         if self.carla_runner.get_num_collision() > 0:
             reward -= 100#0 /(min(total_num_cross,10))
