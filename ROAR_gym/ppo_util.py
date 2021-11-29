@@ -57,6 +57,26 @@ class CustomMaxPoolCNN(BaseFeaturesExtractor):
         return self.linear(self.cnn(observations))
 
 
+class CustomMaxPoolCNN_no_map(BaseFeaturesExtractor):
+    """
+    the CNN network that interleaves convolution & maxpooling layers, used in a
+    previous DQN implementation and shows reasonable results
+    """
+
+    def __init__(self, observation_space: gym.spaces.Box, features_dim: int = 256):
+        super(CustomMaxPoolCNN_no_map, self).__init__(observation_space, features_dim)
+        # We assume CxWxH images (channels last)
+        n_input_channels = observation_space.shape[0]
+
+        self.linear = nn.Sequential(nn.Linear(n_input_channels, 128), nn.ReLU(),
+                                    nn.Linear(128, 256), nn.ReLU(),
+                                    nn.Linear(256, 256), nn.ReLU(),
+                                    nn.Linear(256, 256), nn.ReLU(),
+                                    nn.Linear(256, features_dim),)
+
+    def forward(self, observations: th.Tensor) -> th.Tensor:
+        return self.linear(observations)
+
 def find_latest_model(root_path: Path) -> Optional[Path]:
     import os
     from pathlib import Path

@@ -21,7 +21,7 @@ from stable_baselines3.ppo.ppo import PPO
 from stable_baselines3.ppo.policies import CnnPolicy
 
 from stable_baselines3.common.callbacks import CheckpointCallback, EveryNTimesteps, CallbackList
-from ppo_util import find_latest_model, CustomMaxPoolCNN##?
+from ppo_util import find_latest_model, CustomMaxPoolCNN,CustomMaxPoolCNN_no_map##?
 
 try:
     from ROAR_Gym.envs.roar_env import LoggingCallback
@@ -43,10 +43,19 @@ def main():
 
     model_dir_path = Path("./output/PPOe2e")
 
-    policy_kwargs = dict(
-        features_extractor_class=CustomMaxPoolCNN,
-        features_extractor_kwargs=dict(features_dim=256)
-    )
+    env = gym.make('roar-e2e-ppo-v0', params=params)
+    env.reset()
+
+    if env.mode=='no_map':
+        policy_kwargs = dict(
+            features_extractor_class=CustomMaxPoolCNN_no_map,
+            features_extractor_kwargs=dict(features_dim=256)
+        )
+    else:
+        policy_kwargs = dict(
+            features_extractor_class=CustomMaxPoolCNN,
+            features_extractor_kwargs=dict(features_dim=256)
+        )
 
     training_kwargs = dict(
         learning_rate=0.001,
@@ -58,8 +67,6 @@ def main():
         tensorboard_log=(Path(model_dir_path) / "tensorboard").as_posix()
     )
 
-    env = gym.make('roar-e2e-ppo-v0', params=params)
-    env.reset()
 
     latest_model_path = find_latest_model(model_dir_path)
 
