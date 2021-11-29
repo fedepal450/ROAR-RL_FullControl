@@ -123,7 +123,7 @@ class ROARppoEnvE2E(ROAREnv):
 
     def get_reward(self) -> float:
         # prep for reward computation
-        reward = 0
+        reward = -0.1*(1-self.agent.vehicle.control.throttle+10*self.agent.vehicle.control.braking+0.2*abs(self.agent.vehicle.control.steering))
         curr_dist_to_strip = self.agent.curr_dist_to_strip
 
         if self.crash_check:
@@ -135,11 +135,11 @@ class ROARppoEnvE2E(ROAREnv):
         if self.agent.cross_reward > self.prev_cross_reward:
             num_crossed = self.agent.int_counter - self.prev_int_counter
             #speed reward
-            reward+= np.average(self.speeds) * num_crossed
+            reward+= np.average(self.speeds) * num_crossed*5
             self.speeds=[]
             self.prev_int_counter =self.agent.int_counter
             #crossing reward
-            reward += 5 * (self.agent.cross_reward - self.prev_cross_reward)
+            reward += 10 * (self.agent.cross_reward - self.prev_cross_reward)
 
         if self.carla_runner.get_num_collision() > 0:
             reward -= 100#0 /(min(total_num_cross,10))
