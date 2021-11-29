@@ -20,7 +20,7 @@ class CustomMaxPoolCNN(BaseFeaturesExtractor):
         n_input_channels = observation_space.shape[0]
 
         self.cnn = nn.Sequential(
-            nn.Conv2d(n_input_channels, 6, kernel_size=(3, 3)),
+            nn.Conv2d(n_input_channels, 6, kernel_size=(5, 5)),
             nn.ReLU(),
             nn.Conv2d(6, 12, kernel_size=(3, 3)),
             nn.ReLU(),
@@ -33,13 +33,13 @@ class CustomMaxPoolCNN(BaseFeaturesExtractor):
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=(2, 2)),
             nn.Conv2d(96, 96, kernel_size=(3, 3)),
-            nn.ReLU(),
-            nn.Conv2d(96, 96, kernel_size=(3, 3)),
-            nn.ReLU(),
-            nn.MaxPool2d(kernel_size=(2, 2)),
-            nn.Conv2d(96, 96, kernel_size=(3, 3)),
-            nn.ReLU(),
-            nn.Conv2d(96, 96, kernel_size=(4, 4)),
+            # nn.ReLU(),
+            # nn.Conv2d(96, 96, kernel_size=(3, 3)),
+            # nn.ReLU(),
+            # nn.MaxPool2d(kernel_size=(2, 2)),
+            # nn.Conv2d(96, 96, kernel_size=(3, 3)),
+            # nn.ReLU(),
+            # nn.Conv2d(96, 96, kernel_size=(4, 4)),
             nn.Flatten(),
         )
 
