@@ -60,7 +60,7 @@ class ROARppoEnvE2E(ROAREnv):
         self.action_space = Box(low=np.tile(low,(FRAME_STACK)), high=np.tile(high,(FRAME_STACK)), dtype=np.float32)
         self.mode=mode
         if self.mode=='no_map':
-            self.observation_space = Box(low=np.tile([-1],(71)), high=np.tile([1],(71)), dtype=np.float32)
+            self.observation_space = Box(low=np.tile([-1],(14)), high=np.tile([1],(14)), dtype=np.float32)
         else:
             self.observation_space = Box(-1, 1, shape=(FRAME_STACK, CONFIG["x_res"], CONFIG["y_res"]), dtype=np.float32)
         self.prev_speed = 0
@@ -157,9 +157,10 @@ class ROARppoEnvE2E(ROAREnv):
             vehicle_state[[0,1,2]]/=140
             vehicle_state[[3,4,5]]/=3080
             vehicle_state[[6,7,8]]/=180
-            line_location=np.array([x.to_array()[[0,2]] for x in self.agent.bbox.get_visualize_locs(size=20)]).flatten()/3080 #40
-            line_reward=np.array(self.agent.bbox.get_value(size=20))#20
-            data=np.concatenate([vehicle_state,line_location,line_reward])
+            line_location=self.agent.bbox.to_array() #3
+            line_location[[0,1]]/=3080
+            line_location[[0,1]]-=vehicle_state[[3,5]]
+            data=np.concatenate([vehicle_state,line_location])
 
             img = self.agent.occupancy_map.get_map(transform=self.agent.vehicle.transform,
                                                     view_size=(CONFIG["x_res"], CONFIG["y_res"]),

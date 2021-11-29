@@ -253,3 +253,9 @@ class LineBBox(object):
         dz, dx = self.z2 - self.z1, self.x2 - self.x1
         dx,dz=[dx,dz]/np.linalg.norm([dx,dz])
         return dx*x+dz*z
+
+    def to_array(self):
+        dz, dx = self.z2 - self.z1, self.x2 - self.x1
+        slope_ = dz / (dx+1e-30)
+        angle=np.arctan(slope_)/np.pi*2
+        return np.array([self.x2 , self.z2,angle])

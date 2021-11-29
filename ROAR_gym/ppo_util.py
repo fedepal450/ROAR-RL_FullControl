@@ -68,7 +68,8 @@ class CustomMaxPoolCNN_no_map(BaseFeaturesExtractor):
         # We assume CxWxH images (channels last)
         n_input_channels = observation_space.shape[0]
 
-        self.linear = nn.Sequential(nn.Linear(n_input_channels, 128), nn.ReLU(),
+        self.linear = nn.Sequential(nn.Linear(n_input_channels, 64), nn.ReLU(),
+                                    nn.Linear(64, 128), nn.ReLU(),
                                     nn.Linear(128, 256), nn.ReLU(),
                                     nn.Linear(256, 256), nn.ReLU(),
                                     nn.Linear(256, 256), nn.ReLU(),
