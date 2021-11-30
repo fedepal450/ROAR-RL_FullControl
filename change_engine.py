@@ -36,7 +36,7 @@ with open('ROAR/agent_module/rl_depth_e2e_agent.py') as f:
         line=lines[i]
         if 'occ_file_path' in line and '=' in line and 'Path' in line:
             if mode == '2b':
-                lines[i] = line[:line.find('occ_file_path')]+'occ_file_path = Path("../ROAR_Sim/data/berkeley_minor_global_occu_map.npy")\n'
+                lines[i] = line[:line.find('occ_file_path')]+'occ_file_path = Path("../ROAR_Sim/data/berkeley_minor_cleaned_global_occu_map.npy")\n'
             elif mode == '2e':
                 lines[i] = line[:line.find('occ_file_path')]+'occ_file_path = Path("../ROAR_Sim/data/easy_map_global_occu_map.npy")\n'
 
