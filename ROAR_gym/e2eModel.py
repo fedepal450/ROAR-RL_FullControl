@@ -30,7 +30,7 @@ except:
 from datetime import datetime
 
 
-def main():
+def main(pass_num):
     # Set gym-carla environment
     agent_config = AgentConfig.parse_file(Path("configurations/agent_configuration.json"))
     carla_config = CarlaConfig.parse_file(Path("configurations/carla_configuration.json"))
@@ -78,8 +78,8 @@ def main():
     checkpoint_callback = CheckpointCallback(save_freq=5000, verbose=2, save_path=(model_dir_path/"logs").as_posix())
     event_callback = EveryNTimesteps(n_steps=2000, callback=checkpoint_callback)
     callbacks = CallbackList([checkpoint_callback, event_callback, logging_callback])
-    model = model.learn(total_timesteps=int(1e10), callback=callbacks, reset_num_timesteps=False)
-    model.save(model_dir_path / f"roar_e2e_model_{datetime.now()}")
+    model = model.learn(total_timesteps=int(1e6), callback=callbacks, reset_num_timesteps=False)
+    model.save(model_dir_path / f"roar_e2e_model_{pass_num}")
     print("Successful Save!")
 
 
@@ -88,7 +88,10 @@ if __name__ == '__main__':
                         datefmt="%H:%M:%S", level=logging.INFO)
     logging.getLogger("Controller").setLevel(logging.ERROR)
     logging.getLogger("SimplePathFollowingLocalPlanner").setLevel(logging.ERROR)
-    main()
+    i=0
+    while True:
+        main(i)
+        i += 1
 
 
 

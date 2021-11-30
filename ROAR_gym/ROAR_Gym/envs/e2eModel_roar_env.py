@@ -125,6 +125,10 @@ class ROARppoEnvE2E(ROAREnv):
 
     def _terminal(self) -> bool:
         if self.carla_runner.get_num_collision() > self.max_collision_allowed:
+            crash_rep = open("crash_spot.txt", "a")
+            loc = np.array([self.agent.vehicle.transform.location.x, self.agent.vehicle.transform.location.y, self.agent.vehicle.transform.location.z])
+            np.savetxt(crash_rep, loc, delimiter=',')
+            #crash_rep.close()
             return True
         else:
             return False
