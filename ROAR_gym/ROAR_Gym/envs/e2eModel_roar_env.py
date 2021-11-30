@@ -78,9 +78,9 @@ class ROARppoEnvE2E(ROAREnv):
         rewards = []
 
         for i in range(FRAME_STACK):
-            throttle=np.min([np.power(action[i*3+0],0.1)*2,1])
-            steering=np.sign(action[i*3+1])*np.max([np.power(action[i*3+1],10)*4-3,0])
-            braking=np.max([np.square(action[i*3+2])-0.9,0])
+            throttle=np.min([action[i*3+0]*100,1])
+            steering=np.sign(action[i*3+1])*np.max([abs(action[i*3+1])*100-99,0])
+            braking=np.max([action[i*3+2]*100-99.9,0])
             self.agent.kwargs["control"] = VehicleControl(throttle=throttle,
                                                           steering=steering,
                                                           braking=braking)
