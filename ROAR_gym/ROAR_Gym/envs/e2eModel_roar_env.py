@@ -79,7 +79,7 @@ class ROARppoEnvE2E(ROAREnv):
 
         for i in range(FRAME_STACK):
             throttle=np.power(action[i*3+0],0.1)
-            steering=np.sign(action[i*3+1])*np.max([np.power(action[i*3+1],4)-0.5,0])
+            steering=np.sign(action[i*3+1])*np.max([np.power(action[i*3+1],10)-0.5,0])
             braking=np.max([np.square(action[i*3+2])-0.9,0])
             self.agent.kwargs["control"] = VehicleControl(throttle=throttle,
                                                           steering=steering,
@@ -101,9 +101,9 @@ class ROARppoEnvE2E(ROAREnv):
     def _get_info(self, action: Any) -> dict:
         info_dict = OrderedDict()
         info_dict["Current HIGHSCORE"] = self.highscore
-        info_dict["Furthest Checkpoint"] = self.highest_chkpt
+        info_dict["Furthest Checkpoint"] = self.highest_chkpt*self.agent.interval
         info_dict["episode reward"] = self.ep_rewards
-        info_dict["checkpoints"] = self.agent.int_counter
+        info_dict["checkpoints"] = self.agent.int_counter*self.agent.interval
         info_dict["reward"] = self.frame_reward
         # info_dict["throttle"] = action[0]
         # info_dict["steering"] = action[1]
@@ -142,7 +142,7 @@ class ROARppoEnvE2E(ROAREnv):
             self.speeds=[]
             self.prev_int_counter =self.agent.int_counter
             #crossing reward
-            reward += 20 * (self.agent.cross_reward - self.prev_cross_reward)
+            reward += 4 * (self.agent.cross_reward - self.prev_cross_reward)*self.agent.interval
 
         if self.carla_runner.get_num_collision() > 0:
             reward -= 100#0 /(min(total_num_cross,10))
