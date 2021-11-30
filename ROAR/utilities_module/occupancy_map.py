@@ -1,7 +1,7 @@
 import numpy as np
 from pydantic import BaseModel, Field
 from typing import Union, List, Tuple
-from ROAR.utilities_module.data_structures_models import Transform, Location
+from ROAR.utilities_module.data_structures_models import Transform, Location,Vector3D
 import cv2
 import logging
 import math
@@ -208,7 +208,9 @@ class OccupancyGridMap(Module):
                 boundary_size: Tuple[int, int] = (100, 100),
                 vehicle_value: Optional[int] = None,
                 arbitrary_locations: Optional[List[Location]] = None,
-                arbitrary_point_value: Optional[List[float]] = None) -> np.ndarray:
+                arbitrary_point_value: Optional[List[float]] = None,
+                vehicle_velocity: Optional[Vector3D]=None,
+                rotate: Optional[bool]=True) -> np.ndarray:
         """
         Return global occu map if transform is None
         Otherwise, return ego centric map
@@ -237,6 +239,9 @@ class OccupancyGridMap(Module):
             waypoint_view=np.zeros_like(map_to_view)
             vehicle_view=np.zeros_like(map_to_view)
             vehicle_view[y, x] = 0.8
+            if vehicle_velocity:
+                vehicle_view[y+int(vehicle_velocity.y/2), x+int(vehicle_velocity.x/2)]+=0.7
+
             if arbitrary_point_value is not None and arbitrary_locations is not None:
                 coord=[self.location_to_occu_cord(location=location)[0] for location in arbitrary_locations]
                 coord=np.array(coord).swapaxes(0,1)
@@ -249,9 +254,10 @@ class OccupancyGridMap(Module):
             first_cut_size = (view_size[0] + boundary_size[0], view_size[1] + boundary_size[1])
             map_to_view = map_to_view[y - first_cut_size[1] // 2: y + first_cut_size[1] // 2,
                           x - first_cut_size[0] // 2: x + first_cut_size[0] // 2]
-            image = Image.fromarray(map_to_view)
-            image = image.rotate(-transform.rotation.yaw)
-            map_to_view = np.asarray(image)
+            if rotate:
+                image = Image.fromarray(map_to_view)
+                image = image.rotate(-transform.rotation.yaw)
+                map_to_view = np.asarray(image)
             # # map_to_view = np.rint(map_to_view)
             x_extra, y_extra = boundary_size[0] // 2, boundary_size[1] // 2
             map_to_view = map_to_view[y_extra: map_to_view.shape[1] - y_extra,
@@ -261,9 +267,10 @@ class OccupancyGridMap(Module):
             first_cut_size = (view_size[0] + boundary_size[0], view_size[1] + boundary_size[1])
             waypoint_view = waypoint_view[y - first_cut_size[1] // 2: y + first_cut_size[1] // 2,
                           x - first_cut_size[0] // 2: x + first_cut_size[0] // 2]
-            image = Image.fromarray(waypoint_view)
-            image = image.rotate(-transform.rotation.yaw)
-            waypoint_view = np.asarray(image)
+            if rotate:
+                image = Image.fromarray(waypoint_view)
+                image = image.rotate(-transform.rotation.yaw)
+                waypoint_view = np.asarray(image)
             # # map_to_view = np.rint(map_to_view)
             x_extra, y_extra = boundary_size[0] // 2, boundary_size[1] // 2
             waypoint_view = waypoint_view[y_extra: waypoint_view.shape[1] - y_extra,
@@ -272,9 +279,10 @@ class OccupancyGridMap(Module):
             first_cut_size = (view_size[0] + boundary_size[0], view_size[1] + boundary_size[1])
             vehicle_view = vehicle_view[y - first_cut_size[1] // 2: y + first_cut_size[1] // 2,
                             x - first_cut_size[0] // 2: x + first_cut_size[0] // 2]
-            image = Image.fromarray(vehicle_view)
-            image = image.rotate(-transform.rotation.yaw)
-            vehicle_view = np.asarray(image)
+            if rotate:
+                image = Image.fromarray(vehicle_view)
+                image = image.rotate(-transform.rotation.yaw)
+                vehicle_view = np.asarray(image)
             # # map_to_view = np.rint(map_to_view)
             x_extra, y_extra = boundary_size[0] // 2, boundary_size[1] // 2
             vehicle_view = vehicle_view[y_extra: vehicle_view.shape[1] - y_extra,

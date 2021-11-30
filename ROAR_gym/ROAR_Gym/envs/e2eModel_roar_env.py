@@ -38,7 +38,7 @@ import cv2
 #     7: [0.5, -0.5, 0.0],  # Bear Left & decelerate
 #     8: [0.5, 0.5, 0.0],  # Bear Right & decelerate
 # }
-mode=''
+mode='map'
 if mode=='no_map':
     FRAME_STACK = 1
 else:
@@ -46,8 +46,8 @@ else:
 CONFIG = {
     #max values are 280x280
     #original values are 80x80
-    "x_res": 30,
-    "y_res": 30
+    "x_res": 140,
+    "y_res": 140
 }
 
 
@@ -130,9 +130,9 @@ class ROARppoEnvE2E(ROAREnv):
         curr_dist_to_strip = self.agent.curr_dist_to_strip
 
         if self.crash_check:
-            return reward
+            return 0
         # reward computation
-        current_speed = self.agent.bbox.get_directional_velocity(self.agent.vehicle.velocity.x,self.agent.vehicle.velocity.z)
+        current_speed = self.agent.bbox.get_directional_velocity(self.agent.vehicle.velocity.x,self.agent.vehicle.velocity.y)
         self.speeds.append(current_speed)
 
         if self.agent.cross_reward > self.prev_cross_reward:
@@ -162,13 +162,15 @@ class ROARppoEnvE2E(ROAREnv):
             vehicle_state[[6,7,8]]/=180
             line_location=self.agent.bbox.to_array() #3
             line_location[[0,1]]/=3080
-            line_location[[0,1]]-=vehicle_state[[3,5]]
+            line_location[[0,1]]=(line_location[[0,1]]-vehicle_state[[3,5]])*3080/100
             data=np.concatenate([vehicle_state,line_location])
 
             img = self.agent.occupancy_map.get_map(transform=self.agent.vehicle.transform,
                                                     view_size=(CONFIG["x_res"], CONFIG["y_res"]),
                                                     arbitrary_locations=self.agent.bbox.get_visualize_locs(size=20),
-                                                    arbitrary_point_value=self.agent.bbox.get_value(size=20)
+                                                    arbitrary_point_value=self.agent.bbox.get_value(size=20),
+                                                   vehicle_velocity=self.agent.vehicle.velocity,
+                                                   # rotate=False
                                                     )
             # data = cv2.resize(occu_map, (CONFIG["x_res"], CONFIG["y_res"]), interpolation=cv2.INTER_AREA)
             #cv2.imshow("Occupancy Grid Map", cv2.resize(np.float32(data), dsize=(500, 500)))
@@ -182,7 +184,9 @@ class ROARppoEnvE2E(ROAREnv):
             data = self.agent.occupancy_map.get_map(transform=self.agent.vehicle.transform,
                                                     view_size=(CONFIG["x_res"], CONFIG["y_res"]),
                                                     arbitrary_locations=self.agent.bbox.get_visualize_locs(size=20),
-                                                    arbitrary_point_value=self.agent.bbox.get_value(size=20)
+                                                    arbitrary_point_value=self.agent.bbox.get_value(size=20),
+                                                    vehicle_velocity=self.agent.vehicle.velocity,
+                                                    # rotate=False
                                                     )
             # data = cv2.resize(occu_map, (CONFIG["x_res"], CONFIG["y_res"]), interpolation=cv2.INTER_AREA)
             #cv2.imshow("Occupancy Grid Map", cv2.resize(np.float32(data), dsize=(500, 500)))
