@@ -46,8 +46,8 @@ else:
 CONFIG = {
     #max values are 280x280
     #original values are 80x80
-    "x_res": 140,
-    "y_res": 140
+    "x_res": 80,
+    "y_res": 80
 }
 
 
@@ -78,8 +78,8 @@ class ROARppoEnvE2E(ROAREnv):
         rewards = []
 
         for i in range(FRAME_STACK):
-            throttle=np.sqrt(action[i*3+0])
-            steering=np.sign(action[i*3+1])*np.max([np.square(action[i*3+1])-0.5,0])
+            throttle=np.power(action[i*3+0],0.1)
+            steering=np.sign(action[i*3+1])*np.max([np.power(action[i*3+1],4)-0.5,0])
             braking=np.max([np.square(action[i*3+2])-0.9,0])
             self.agent.kwargs["control"] = VehicleControl(throttle=throttle,
                                                           steering=steering,

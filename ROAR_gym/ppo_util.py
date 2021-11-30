@@ -39,12 +39,7 @@ class CustomMaxPoolCNN(BaseFeaturesExtractor):
             nn.MaxPool2d(kernel_size=(2, 2)),
             nn.Conv2d(96, 96, kernel_size=(3, 3)),
             nn.ReLU(),
-            nn.Conv2d(96, 96, kernel_size=(3, 3)),
-            nn.ReLU(),
-            nn.MaxPool2d(kernel_size=(2, 2)),
-            nn.Conv2d(96, 96, kernel_size=(3, 3)),
-            nn.ReLU(),
-            nn.Conv2d(96, 96, kernel_size=(2, 2)),
+            nn.Conv2d(96, 96, kernel_size=(4, 4)),
             nn.Flatten(),
         )
 
