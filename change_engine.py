@@ -30,7 +30,7 @@ with open('ROAR_gym/configurations/agent_configuration.json') as f:
 with open('ROAR_gym/configurations/agent_configuration.json', 'w') as f:
     json.dump(agent_config, f,indent=4)
 
-with open('ROAR/agent_module/rl_depth_e2e_agent.py') as f:
+with open('ROAR/agent_module/rl_e2e_ppo_agent.py') as f:
     lines=f.readlines()
     for i in range(len(lines)):
         line=lines[i]
@@ -40,5 +40,5 @@ with open('ROAR/agent_module/rl_depth_e2e_agent.py') as f:
             elif mode == '2e':
                 lines[i] = line[:line.find('occ_file_path')]+'occ_file_path = Path("../ROAR_Sim/data/easy_map_global_occu_map.npy")\n'
 
-with open('ROAR/agent_module/rl_depth_e2e_agent.py','w') as f:
+with open('ROAR/agent_module/rl_e2e_ppo_agent.py','w') as f:
     f.writelines(lines)
