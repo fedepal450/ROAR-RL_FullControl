@@ -38,7 +38,7 @@ import cv2
 #     7: [0.5, -0.5, 0.0],  # Bear Left & decelerate
 #     8: [0.5, 0.5, 0.0],  # Bear Right & decelerate
 # }
-mode='map'
+mode='no_map'
 if mode=='no_map':
     FRAME_STACK = 1
 else:
@@ -57,10 +57,12 @@ class ROARppoEnvE2E(ROAREnv):
         #self.action_space = Discrete(len(DISCRETE_ACTIONS))
         low=np.array([0.0, -1.0, 0.0])
         high=np.array([1.0, 1.0, 1.0])
+        # low=np.array([100, 0, -1])
+        # high=np.array([1, 0.12, 0.5])
         self.action_space = Box(low=np.tile(low,(FRAME_STACK)), high=np.tile(high,(FRAME_STACK)), dtype=np.float32)
         self.mode=mode
         if self.mode=='no_map':
-            self.observation_space = Box(low=np.tile([-1],(14)), high=np.tile([1],(14)), dtype=np.float32)
+            self.observation_space = Box(low=np.tile([-1],(15)), high=np.tile([1],(15)), dtype=np.float32)
         else:
             self.observation_space = Box(-1, 1, shape=(FRAME_STACK, CONFIG["x_res"], CONFIG["y_res"]), dtype=np.float32)
         self.prev_speed = 0
@@ -78,9 +80,12 @@ class ROARppoEnvE2E(ROAREnv):
         rewards = []
 
         for i in range(FRAME_STACK):
-            throttle=np.min([action[i*3+0]*100,1])
-            steering=np.sign(action[i*3+1])*np.max([abs(action[i*3+1])*100-99,0])
-            braking=np.max([action[i*3+2]*100-99.9,0])
+            throttle=np.min([np.power(action[i*3+0],0.1)*2,1])
+            steering=np.sign(action[i*3+1])*np.max([np.power(action[i*3+1],10)-0.5,0])
+            braking=np.max([np.square(action[i*3+2])-0.9,0])
+            # throttle=min(max(action[i*3+0],0),1)
+            # steering=min(max(action[i*3+1],-1),1)
+            # braking=min(max(action[i*3+2],0),1)
             self.agent.kwargs["control"] = VehicleControl(throttle=throttle,
                                                           steering=steering,
                                                           braking=braking)
@@ -157,12 +162,12 @@ class ROARppoEnvE2E(ROAREnv):
         # star edited this: it's better to set the view_size directly instead of doing resize
         if self.mode=='no_map':
             vehicle_state=self.agent.vehicle.to_array() #11
-            vehicle_state[[0,1,2]]/=140
+            line_location=self.agent.bbox.to_array(vehicle_state[3],vehicle_state[5]) #4
+            vehicle_state[[0,1,2]]/=150
             vehicle_state[[3,4,5]]/=3080
             vehicle_state[[6,7,8]]/=180
-            line_location=self.agent.bbox.to_array() #3
             line_location[[0,1]]/=3080
-            line_location[[0,1]]=(line_location[[0,1]]-vehicle_state[[3,5]])*3080/100
+            line_location[[0,1]]=(line_location[[0,1]]-vehicle_state[[3,5]])*3080/50
             data=np.concatenate([vehicle_state,line_location])
 
             img = self.agent.occupancy_map.get_map(transform=self.agent.vehicle.transform,
