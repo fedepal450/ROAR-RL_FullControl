@@ -23,7 +23,7 @@ with open('ROAR_Sim/configurations/occu_map_config.json','w') as f:
 with open('ROAR_gym/configurations/agent_configuration.json') as f:
     agent_config = json.load(f)
     if mode == '2b':
-        agent_config["waypoint_file_path"] = "../ROAR_Sim/data/berkeley_minor_new_waypoints.txt"
+        agent_config["waypoint_file_path"] = "../ROAR_Sim/data/berkeley_minor_samedistance_waypoints.txt"
     elif mode == '2e':
         agent_config["waypoint_file_path"] = '../ROAR_Sim/data/easy_map_waypoints.txt'
 
