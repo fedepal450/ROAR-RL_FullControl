@@ -41,7 +41,7 @@ class RLe2ePPOAgent(Agent):
         self.plan_lst = list(self.mission_planner.produce_single_lap_mission_plan())
 
         self.kwargs = kwargs
-        self.interval = self.kwargs.get('interval', 180)
+        self.interval = self.kwargs.get('interval', 150)
         self.look_back = self.kwargs.get('look_back', 5)
         self.look_back_max = self.kwargs.get('look_back_max', 10)
         self.thres = self.kwargs.get('thres', 1e-3)
@@ -267,6 +267,10 @@ class LineBBox(object):
     def get_yaw(self):
         dz, dx = self.z2 - self.z1, self.x2 - self.x1
         # slope_ = dz / (dx+1e-30)
-        slop=dx/(dz+1e-30)
-        angle=np.arctan(slop)/np.pi*180
+        if dz<0.01:
+            angle=90
+        else:
+            slop=dx/dz
+            angle=np.arctan(slop)/np.pi*180
+        print(angle)
         return angle
