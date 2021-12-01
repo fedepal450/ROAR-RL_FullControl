@@ -38,7 +38,7 @@ import cv2
 #     7: [0.5, -0.5, 0.0],  # Bear Left & decelerate
 #     8: [0.5, 0.5, 0.0],  # Bear Right & decelerate
 # }
-mode='map'
+mode='no_map'
 if mode=='no_map':
     FRAME_STACK = 1
 else:
@@ -55,8 +55,8 @@ class ROARppoEnvE2E(ROAREnv):
     def __init__(self, params):
         super().__init__(params)
         #self.action_space = Discrete(len(DISCRETE_ACTIONS))
-        low=np.array([0.0, -1.0, 0.0])
-        high=np.array([1.0, 1.0, 1.0])
+        low=np.array([-5.0, -7.0, 0.0])
+        high=np.array([0.0, 7.0, 10.0])
         # low=np.array([100, 0, -1])
         # high=np.array([1, 0.12, 0.5])
         self.action_space = Box(low=np.tile(low,(FRAME_STACK)), high=np.tile(high,(FRAME_STACK)), dtype=np.float32)
@@ -80,9 +80,12 @@ class ROARppoEnvE2E(ROAREnv):
         rewards = []
 
         for i in range(FRAME_STACK):
-            throttle=np.min([np.power(action[i*3+0],0.1)*2,1])
-            steering=np.sign(action[i*3+1])*np.max([np.power(action[i*3+1],10)-0.5,0])
-            braking=np.max([np.square(action[i*3+2])-0.9,0])
+            # throttle=np.min([np.power(action[i*3+0],0.1)*2,1])
+            # steering=np.sign(action[i*3+1])*np.max([np.power(action[i*3+1],10)-0.5,0])
+            # braking=np.max([np.square(action[i*3+2])-0.9,0])
+            throttle=action[i*3+0]/5+1
+            steering=action[i*3+1]/7
+            braking=action[i*3+2]/10
             # throttle=min(max(action[i*3+0],0),1)
             # steering=min(max(action[i*3+1],-1),1)
             # braking=min(max(action[i*3+2],0),1)
