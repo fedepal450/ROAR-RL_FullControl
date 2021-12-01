@@ -174,19 +174,19 @@ class ROARppoEnvE2E(ROAREnv):
             line_location[[0,1]]=(line_location[[0,1]]-vehicle_state[[3,5]])*3080/50
             data=np.concatenate([vehicle_state,line_location])
 
-            img = self.agent.occupancy_map.get_map(transform=self.agent.vehicle.transform,
-                                                    view_size=(CONFIG["x_res"], CONFIG["y_res"]),
-                                                    arbitrary_locations=self.agent.bbox.get_visualize_locs(size=20),
-                                                    arbitrary_point_value=self.agent.bbox.get_value(size=20),
-                                                   vehicle_velocity=self.agent.vehicle.velocity,
-                                                   # rotate=False
-                                                    )
-            # data = cv2.resize(occu_map, (CONFIG["x_res"], CONFIG["y_res"]), interpolation=cv2.INTER_AREA)
-            #cv2.imshow("Occupancy Grid Map", cv2.resize(np.float32(data), dsize=(500, 500)))
-
-            img_view=np.sum(img,axis=2)
-            cv2.imshow("data", img_view) # uncomment to show occu map
-            cv2.waitKey(1)
+            # img = self.agent.occupancy_map.get_map(transform=self.agent.vehicle.transform,
+            #                                         view_size=(CONFIG["x_res"], CONFIG["y_res"]),
+            #                                         arbitrary_locations=self.agent.bbox.get_visualize_locs(size=20),
+            #                                         arbitrary_point_value=self.agent.bbox.get_value(size=20),
+            #                                        vehicle_velocity=self.agent.vehicle.velocity,
+            #                                        rotate=self.agent.bbox.get_yaw()
+            #                                         )
+            # # data = cv2.resize(occu_map, (CONFIG["x_res"], CONFIG["y_res"]), interpolation=cv2.INTER_AREA)
+            # #cv2.imshow("Occupancy Grid Map", cv2.resize(np.float32(data), dsize=(500, 500)))
+            #
+            # # img_view=np.sum(img,axis=2)
+            # cv2.imshow("data", img) # uncomment to show occu map
+            # cv2.waitKey(1)
 
             return data
         else:
@@ -195,19 +195,19 @@ class ROARppoEnvE2E(ROAREnv):
                                                     arbitrary_locations=self.agent.bbox.get_visualize_locs(size=20),
                                                     arbitrary_point_value=self.agent.bbox.get_value(size=20),
                                                     vehicle_velocity=self.agent.vehicle.velocity,
-                                                    # rotate=False
+                                                    # rotate=self.agent.bbox.get_yaw()
                                                     )
             # data = cv2.resize(occu_map, (CONFIG["x_res"], CONFIG["y_res"]), interpolation=cv2.INTER_AREA)
             #cv2.imshow("Occupancy Grid Map", cv2.resize(np.float32(data), dsize=(500, 500)))
 
-            data_view=np.sum(data,axis=2)
-            cv2.imshow("data", data_view) # uncomment to show occu map
+            # data_view=np.sum(data,axis=2)
+            cv2.imshow("data", data) # uncomment to show occu map
             cv2.waitKey(1)
             # yaw_angle=self.agent.vehicle.transform.rotation.yaw
             velocity=self.agent.vehicle.get_speed(self.agent.vehicle)
             data[0,0,2]=velocity
 
-            return data_view  # height x width x 3 array
+            return data  # height x width x 3 array
     #3location 3 rotation 3velocity 20 waypoline locations 20 wayline rewards
 
     def reset(self) -> Any:
