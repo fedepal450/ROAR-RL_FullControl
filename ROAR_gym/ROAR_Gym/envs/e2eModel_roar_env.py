@@ -204,8 +204,8 @@ class ROARppoEnvE2E(ROAREnv):
             cv2.imshow("data", data) # uncomment to show occu map
             cv2.waitKey(1)
             # yaw_angle=self.agent.vehicle.transform.rotation.yaw
-            velocity=self.agent.vehicle.get_speed(self.agent.vehicle)
-            data[0,0,2]=velocity
+            # velocity=self.agent.vehicle.get_speed(self.agent.vehicle)
+            # data[0,0,2]=velocity
 
             return data  # height x width x 3 array
     #3location 3 rotation 3velocity 20 waypoline locations 20 wayline rewards
