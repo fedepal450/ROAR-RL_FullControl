@@ -254,10 +254,9 @@ class OccupancyGridMap(Module):
             # map_to_view=np.sum(np.stack((map_to_view,waypoint_view),2),axis=2)
             # map_to_view[map_to_view>1]=0.2
             if rotate:
-                yaw=rotate
+                yaw=-rotate
             else:
                 yaw=-transform.rotation.yaw
-
             first_cut_size = (view_size[0] + boundary_size[0], view_size[1] + boundary_size[1])
             map_to_view = map_to_view[y - first_cut_size[1] // 2: y + first_cut_size[1] // 2,
                           x - first_cut_size[0] // 2: x + first_cut_size[0] // 2]

@@ -256,21 +256,13 @@ class LineBBox(object):
 
     def to_array(self,x,z):
         dz, dx = self.z2 - self.z1, self.x2 - self.x1
-        slope_ = dz / (dx+1e-30)
-        angle1=np.arctan(slope_)/np.pi*2
+        angle1=np.arctan2(-dx,-dz)/np.pi
 
         dz, dx = self.z2 - z, self.x2 - x
-        slope_ = dz / (dx+1e-30)
-        angle2=np.arctan(slope_)/np.pi*2
-        return np.array([self.x2 , self.z2,angle1,angle2])
+        angle2=np.arctan2(-dx,-dz)/np.pi
+        return np.array([dx, dz, np.sqrt(np.square(dz)+np.square(dx)),angle1,angle2])
 
     def get_yaw(self):
         dz, dx = self.z2 - self.z1, self.x2 - self.x1
-        # slope_ = dz / (dx+1e-30)
-        if dz<0.01:
-            angle=90
-        else:
-            slop=dx/dz
-            angle=np.arctan(slop)/np.pi*180
-        # print(angle)
+        angle=np.arctan2(-dx,-dz)/np.pi*180
         return angle

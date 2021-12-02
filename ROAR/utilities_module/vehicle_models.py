@@ -36,7 +36,7 @@ class VehicleControl(BaseModel):
         return self.clamp(self.throttle, 0, 1)
 
     def to_array(self) -> np.ndarray:
-        return np.array([self.throttle, self.steering])
+        return np.array([self.throttle, self.steering,self.braking])
 
     def record(self):
         return f"{self.throttle},{self.steering}"
