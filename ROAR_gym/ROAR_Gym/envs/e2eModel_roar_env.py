@@ -86,7 +86,7 @@ class ROARppoEnvE2E(ROAREnv):
             # steering=np.sign(action[i*3+1])*np.max([np.power(action[i*3+1],10)-0.5,0])
             # braking=np.max([np.square(action[i*3+2])-0.9,0])
             throttle=(action[i*3+0]+1)/5+1
-            steering=action[i*3+1]/7
+            steering=action[i*3+1]/10
             braking=(action[i*3+2]-2)/10
             # throttle=min(max(action[i*3+0],0),1)
             # steering=min(max(action[i*3+1],-1),1)
@@ -156,7 +156,7 @@ class ROARppoEnvE2E(ROAREnv):
             self.speeds=[]
             self.prev_int_counter =self.agent.int_counter
             #crossing reward
-            reward += 4 * (self.agent.cross_reward - self.prev_cross_reward)*self.agent.interval
+            reward += 0.1 * (self.agent.cross_reward - self.prev_cross_reward)*self.agent.interval
 
         if self.carla_runner.get_num_collision() > 0:
             reward -= 100#0 /(min(total_num_cross,10))

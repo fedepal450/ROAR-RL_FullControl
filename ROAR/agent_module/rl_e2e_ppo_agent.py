@@ -246,8 +246,8 @@ class LineBBox(object):
         return self.strip_list
 
     def get_value(self,size=10):
-        middle=scipy.stats.norm(size//2, size//2).pdf(size//2)
-        return [scipy.stats.norm(size//2, size//2).pdf(i)/middle*0.5 for i in  range(size)]
+        middle=scipy.stats.norm(size//2, size//3).pdf(size//2)
+        return [scipy.stats.norm(size//2, size//3).pdf(i)/middle*0.5 for i in  range(size)]
 
     def get_directional_velocity(self,x,y):
         dz, dx = self.z2 - self.z1, self.x2 - self.x1
