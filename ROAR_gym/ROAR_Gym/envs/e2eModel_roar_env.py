@@ -64,7 +64,7 @@ class ROARppoEnvE2E(ROAREnv):
         if self.mode=='no_map':
             self.observation_space = Box(low=np.tile([-1],(15)), high=np.tile([1],(15)), dtype=np.float32)
         else:
-            self.observation_space = Box(-1, 1, shape=(FRAME_STACK, CONFIG["x_res"], CONFIG["y_res"]), dtype=np.float32)
+            self.observation_space = Box(-10, 1, shape=(FRAME_STACK, CONFIG["x_res"], CONFIG["y_res"]), dtype=np.float32)
         self.prev_speed = 0
         self.prev_cross_reward = 0
         self.crash_check = False
@@ -209,7 +209,7 @@ class ROARppoEnvE2E(ROAREnv):
             # yaw_angle=self.agent.vehicle.transform.rotation.yaw
             # velocity=self.agent.vehicle.get_speed(self.agent.vehicle)
             # data[0,0,2]=velocity
-            data[data==1]=-1
+            data[data==1]=-10
             return data  # height x width x 3 array
     #3location 3 rotation 3velocity 20 waypoline locations 20 wayline rewards
 
