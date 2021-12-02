@@ -272,5 +272,5 @@ class LineBBox(object):
         else:
             slop=dx/dz
             angle=np.arctan(slop)/np.pi*180
-        print(angle)
+        # print(angle)
         return angle
