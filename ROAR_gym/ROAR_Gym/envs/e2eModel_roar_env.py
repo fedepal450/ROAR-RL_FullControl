@@ -55,8 +55,8 @@ class ROARppoEnvE2E(ROAREnv):
     def __init__(self, params):
         super().__init__(params)
         #self.action_space = Discrete(len(DISCRETE_ACTIONS))
-        low=np.array([-5.0, -7.0, 0.0])
-        high=np.array([0.0, 7.0, 10.0])
+        low=np.array([-6.0, -10.0, 2.0])
+        high=np.array([-1.0, 10.0, 12.0])
         # low=np.array([100, 0, -1])
         # high=np.array([1, 0.12, 0.5])
         self.action_space = Box(low=np.tile(low,(FRAME_STACK)), high=np.tile(high,(FRAME_STACK)), dtype=np.float32)
@@ -83,9 +83,9 @@ class ROARppoEnvE2E(ROAREnv):
             # throttle=np.min([np.power(action[i*3+0],0.1)*2,1])
             # steering=np.sign(action[i*3+1])*np.max([np.power(action[i*3+1],10)-0.5,0])
             # braking=np.max([np.square(action[i*3+2])-0.9,0])
-            throttle=action[i*3+0]/5+1
+            throttle=(action[i*3+0]+1)/5+1
             steering=action[i*3+1]/7
-            braking=action[i*3+2]/10
+            braking=(action[i*3+2]-2)/10
             # throttle=min(max(action[i*3+0],0),1)
             # steering=min(max(action[i*3+1],-1),1)
             # braking=min(max(action[i*3+2],0),1)
@@ -209,6 +209,7 @@ class ROARppoEnvE2E(ROAREnv):
             # yaw_angle=self.agent.vehicle.transform.rotation.yaw
             # velocity=self.agent.vehicle.get_speed(self.agent.vehicle)
             # data[0,0,2]=velocity
+            data.setflags(write=1)
             data[data==1]=-10
             return data  # height x width x 3 array
     #3location 3 rotation 3velocity 20 waypoline locations 20 wayline rewards
