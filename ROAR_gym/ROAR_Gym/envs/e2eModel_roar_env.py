@@ -131,7 +131,7 @@ class ROARppoEnvE2E(ROAREnv):
             crash_rep = open("crash_spot.txt", "a")
             loc = np.array([self.agent.vehicle.transform.location.x, self.agent.vehicle.transform.location.y, self.agent.vehicle.transform.location.z])
             np.savetxt(crash_rep, loc, delimiter=',')
-            #crash_rep.close()
+            crash_rep.close()
             return True
         else:
             return False
@@ -209,7 +209,7 @@ class ROARppoEnvE2E(ROAREnv):
             # yaw_angle=self.agent.vehicle.transform.rotation.yaw
             # velocity=self.agent.vehicle.get_speed(self.agent.vehicle)
             # data[0,0,2]=velocity
-
+            data[data==1]=-1
             return data  # height x width x 3 array
     #3location 3 rotation 3velocity 20 waypoline locations 20 wayline rewards
 
