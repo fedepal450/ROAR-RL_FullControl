@@ -64,7 +64,7 @@ class ROARppoEnvE2E(ROAREnv):
         if self.mode=='no_map':
             self.observation_space = Box(low=np.tile([-1],(13)), high=np.tile([1],(13)), dtype=np.float32)
         elif self.mode=='combine':
-            self.observation_space = Box(-10, 1, shape=(FRAME_STACK,2, CONFIG["x_res"], CONFIG["y_res"]), dtype=np.float32)
+            self.observation_space = Box(-10, 1, shape=(FRAME_STACK,3, CONFIG["x_res"], CONFIG["y_res"]), dtype=np.float32)
         else:
             self.observation_space = Box(-10, 1, shape=(FRAME_STACK, CONFIG["x_res"], CONFIG["y_res"]), dtype=np.float32)
         self.prev_speed = 0
@@ -223,10 +223,13 @@ class ROARppoEnvE2E(ROAREnv):
             # velocity=self.agent.vehicle.get_speed(self.agent.vehicle)
             # data[0,0,2]=velocity
             map_input=map.copy()
-            map_input[map_input==1]=-10
+            map_input[map_input!=1]=0
+            map_input*=-10
+            waypoint=map.copy()
+            waypoint[waypoint==1]=0
             data_input=np.zeros(map_input)
             data_input[0,:13]=data
-            return np.array([map_input,data_input])
+            return np.array([map_input,waypoint,data_input])
 
         else:
             data = self.agent.occupancy_map.get_map(transform=self.agent.vehicle.transform,
