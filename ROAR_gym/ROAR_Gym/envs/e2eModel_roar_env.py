@@ -38,7 +38,7 @@ import cv2
 #     7: [0.5, -0.5, 0.0],  # Bear Left & decelerate
 #     8: [0.5, 0.5, 0.0],  # Bear Right & decelerate
 # }
-mode='no_map'
+mode='combine'
 if mode=='no_map':
     FRAME_STACK = 1
 else:
@@ -46,8 +46,8 @@ else:
 CONFIG = {
     #max values are 280x280
     #original values are 80x80
-    "x_res": 80,
-    "y_res": 80
+    "x_res": 224,
+    "y_res": 224
 }
 
 
