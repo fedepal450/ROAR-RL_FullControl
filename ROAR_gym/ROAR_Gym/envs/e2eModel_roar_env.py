@@ -227,7 +227,7 @@ class ROARppoEnvE2E(ROAREnv):
             map_input*=-10
             waypoint=map.copy()
             waypoint[waypoint==1]=0
-            data_input=np.zeros(map_input)
+            data_input=np.zeros_like(map)
             data_input[0,:13]=data
             return np.array([map_input,waypoint,data_input])
 
