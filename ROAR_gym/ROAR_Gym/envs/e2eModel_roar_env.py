@@ -38,7 +38,7 @@ import cv2
 #     7: [0.5, -0.5, 0.0],  # Bear Left & decelerate
 #     8: [0.5, 0.5, 0.0],  # Bear Right & decelerate
 # }
-mode='no_map'
+mode='map'
 if mode=='no_map':
     FRAME_STACK = 1
 else:
@@ -76,10 +76,13 @@ class ROARppoEnvE2E(ROAREnv):
         self.highest_chkpt = 0
         self.speeds = []
         self.prev_int_counter = 0
+        self.steps=0
+        self.largest_steps=0
 
     def step(self, action: Any) -> Tuple[Any, float, bool, dict]:
         obs = []
         rewards = []
+        self.steps+=1
 
         for i in range(FRAME_STACK):
             # throttle=np.min([np.power(action[i*3+0],0.1)*2,1])
@@ -115,6 +118,7 @@ class ROARppoEnvE2E(ROAREnv):
         info_dict["episode reward"] = self.ep_rewards
         info_dict["checkpoints"] = self.agent.int_counter*self.agent.interval
         info_dict["reward"] = self.frame_reward
+        info_dict["largest_steps"] = self.largest_steps
         # info_dict["throttle"] = action[0]
         # info_dict["steering"] = action[1]
         # info_dict["braking"] = action[2]
@@ -208,8 +212,8 @@ class ROARppoEnvE2E(ROAREnv):
 
             map = self.agent.occupancy_map.get_map(transform=self.agent.vehicle.transform,
                                                     view_size=(CONFIG["x_res"], CONFIG["y_res"]),
-                                                    arbitrary_locations=self.agent.bbox.get_visualize_locs(size=20),
-                                                    arbitrary_point_value=self.agent.bbox.get_value(size=20),
+                                                    arbitrary_locations=self.agent.bbox.get_visualize_locs(),
+                                                    arbitrary_point_value=self.agent.bbox.get_value(),
                                                     vehicle_velocity=self.agent.vehicle.velocity,
                                                     # rotate=self.agent.bbox.get_yaw()
                                                     )
@@ -234,8 +238,8 @@ class ROARppoEnvE2E(ROAREnv):
         else:
             data = self.agent.occupancy_map.get_map(transform=self.agent.vehicle.transform,
                                                     view_size=(CONFIG["x_res"], CONFIG["y_res"]),
-                                                    arbitrary_locations=self.agent.bbox.get_visualize_locs(size=20),
-                                                    arbitrary_point_value=self.agent.bbox.get_value(size=20),
+                                                    arbitrary_locations=self.agent.bbox.get_visualize_locs(),
+                                                    arbitrary_point_value=self.agent.bbox.get_value(),
                                                     vehicle_velocity=self.agent.vehicle.velocity,
                                                     # rotate=self.agent.bbox.get_yaw()
                                                     )
@@ -255,4 +259,7 @@ class ROARppoEnvE2E(ROAREnv):
 
     def reset(self) -> Any:
         super(ROARppoEnvE2E, self).reset()
+        if self.steps>self.largest_steps:
+            self.largest_steps=self.steps
+        self.steps=0
         return self._get_obs()

@@ -46,20 +46,35 @@ class RLe2ePPOAgent(Agent):
         self.look_back_max = self.kwargs.get('look_back_max', 10)
         self.thres = self.kwargs.get('thres', 1e-3)
 
+        middle=scipy.stats.norm(20//2, 20//3).pdf(20//2)
+        self.bbox_reward_list=[scipy.stats.norm(20//2, 20//3).pdf(i)/middle*0.5 for i in  range(20)]
+
         self.int_counter = 0
         self.cross_reward=0
         self.counter = 0
         self.finished = False
         self.curr_dist_to_strip = 0
         self.bbox: Optional[LineBBox] = None
-        self.bbox_list = []# list of bbox
+        # self.bbox_list = []# list of bbox
         self._get_next_bbox()
 
-    def run_step(self, sensors_data: ViveTrackerData, vehicle: Vehicle) -> VehicleControl:
-        super(RLe2ePPOAgent, self).run_step(sensors_data, vehicle)
+    def reset(self,vehicle: Vehicle):
+        self.vehicle=vehicle
+        self.int_counter = 0
+        self.cross_reward=0
+        self.counter = 0
+        self.finished = False
+        self.curr_dist_to_strip = 0
+        self.bbox: Optional[LineBBox] = None
+        # self.bbox_list = []# list of bbox
+        self._get_next_bbox()
+
+    def run_step(self,vehicle: Vehicle) -> VehicleControl:
+        # super(RLe2ePPOAgent, self).run_step(sensors_data, vehicle)
         #print(self.vehicle.transform)
         #self.local_planner.run_in_series()#TO REMOVE
 
+        self.vehicle = vehicle
         self.curr_dist_to_strip = self.bbox_step()
         if self.kwargs.get("control") is None:
             return VehicleControl()
@@ -108,47 +123,47 @@ class RLe2ePPOAgent(Agent):
             if abs(dx) < self.thres and abs(dz) < self.thres:
                 curr_lb += 1
             else:
-                self.bbox = LineBBox(t1, t2)
+                self.bbox = LineBBox(t1, t2,self.bbox_reward_list)
                 return
         # no next bbox
         print("finished all the iterations!")
         self.finished = True
 
-    def _get_bbox_list(self, num):
-        # make sure no index out of bound error
-        self.bbox_list = []#clear bbox_list
-        curr_lb = self.look_back
-        curr_idx = self.int_counter * self.interval
-        while curr_idx + curr_lb < len(self.plan_lst):
-            if curr_lb > self.look_back_max:
-                self.int_counter += 1
-                curr_lb = self.look_back
-                curr_idx = self.int_counter * self.interval
-                continue
-
-            t1 = self.plan_lst[curr_idx]
-            t2 = self.plan_lst[curr_idx + curr_lb]
-
-            dx = t2.location.x - t1.location.x
-            dz = t2.location.z - t1.location.z
-            if abs(dx) < self.thres and abs(dz) < self.thres:
-                curr_lb += 1
-            else:
-                if num > 0:
-                    num -= 1
-                    self.bbox_list.append(LineBBox(t1, t2))
-                    curr_lb = self.look_back #update curr_lb
-                    curr_idx = self.int_counter * self.interval
-                else:
-                    return
-
-        # no next bbox
-        print("finished all the iterations!")
-        self.finished = True
+    # def _get_bbox_list(self, num):
+    #     # make sure no index out of bound error
+    #     self.bbox_list = []#clear bbox_list
+    #     curr_lb = self.look_back
+    #     curr_idx = self.int_counter * self.interval
+    #     while curr_idx + curr_lb < len(self.plan_lst):
+    #         if curr_lb > self.look_back_max:
+    #             self.int_counter += 1
+    #             curr_lb = self.look_back
+    #             curr_idx = self.int_counter * self.interval
+    #             continue
+    #
+    #         t1 = self.plan_lst[curr_idx]
+    #         t2 = self.plan_lst[curr_idx + curr_lb]
+    #
+    #         dx = t2.location.x - t1.location.x
+    #         dz = t2.location.z - t1.location.z
+    #         if abs(dx) < self.thres and abs(dz) < self.thres:
+    #             curr_lb += 1
+    #         else:
+    #             if num > 0:
+    #                 num -= 1
+    #                 self.bbox_list.append(LineBBox(t1, t2))
+    #                 curr_lb = self.look_back #update curr_lb
+    #                 curr_idx = self.int_counter * self.interval
+    #             else:
+    #                 return
+    #
+    #     # no next bbox
+    #     print("finished all the iterations!")
+    #     self.finished = True
 
 
 class LineBBox(object):
-    def __init__(self, transform1: Transform, transform2: Transform) -> None:
+    def __init__(self, transform1: Transform, transform2: Transform,bbox_reward_list) -> None:
         self.x1, self.z1 = transform1.location.x, transform1.location.z
         self.x2, self.z2 = transform2.location.x, transform2.location.z
         #print(self.x2, self.z2)
@@ -158,6 +173,9 @@ class LineBBox(object):
         self.dis = self._construct_dis()
         self.strip_list = None
         self.size=20
+        self.bbox_reward_list=bbox_reward_list
+        self.strip_list = None
+        self.generate_visualize_locs(20)
 
         if self.eq(self.x1, self.z1) > 0:
             self.pos_true = False
@@ -222,7 +240,7 @@ class LineBBox(object):
         middle=scipy.stats.norm(self.size//2, self.size//2).pdf(self.size//2)
         return (scipy.stats.norm(self.size//2, self.size//2).pdf(self.size//2-self.dis(x, z))/middle if crossed else 0, dist)
 
-    def get_visualize_locs(self, size=10):
+    def generate_visualize_locs(self, size=10):
         if self.strip_list is not None:
             return self.strip_list
 
@@ -243,11 +261,13 @@ class LineBBox(object):
         self.strip_list = []
         for i in range(len(xs)):
             self.strip_list.append(Location(x=xs[i], y=0, z=zs[i]))
+
+    def get_visualize_locs(self):
         return self.strip_list
 
-    def get_value(self,size=10):
-        middle=scipy.stats.norm(size//2, size//3).pdf(size//2)
-        return [scipy.stats.norm(size//2, size//3).pdf(i)/middle*0.5 for i in  range(size)]
+
+    def get_value(self):
+        return self.bbox_reward_list
 
     def get_directional_velocity(self,x,y):
         dz, dx = self.z2 - self.z1, self.x2 - self.x1

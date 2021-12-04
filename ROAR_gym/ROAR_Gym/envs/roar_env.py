@@ -65,8 +65,7 @@ class ROAREnv(gym.Env, ABC):
             if self.agent is None:
                 raise Exception(
                     "In autopilot mode, but no agent is defined.")
-            agent_control = self.agent.run_step(vehicle=self.carla_runner.vehicle_state,
-                                                sensors_data=self.carla_runner.sensor_data)
+            agent_control = self.agent.run_step(vehicle=self.carla_runner.vehicle_state)
             carla_control = self.carla_runner.carla_bridge.convert_control_from_agent_to_source(agent_control)
         self.carla_runner.world.player.apply_control(carla_control)
         return self._get_obs(), self.get_reward(), self._terminal(), self._get_info(action)
@@ -77,7 +76,11 @@ class ROAREnv(gym.Env, ABC):
                                         carla_settings=self.carla_config,
                                         npc_agent_class=self.npc_agent_class)
         vehicle = self.carla_runner.set_carla_world()
-        self.agent = self.EgoAgentClass(vehicle=vehicle, agent_settings=self.agent_config)
+
+        if self.agent:
+            self.agent.reset(vehicle=vehicle)
+        else:
+            self.agent = self.EgoAgentClass(vehicle=vehicle, agent_settings=self.agent_config)
         self.clock: Optional[pygame.time.Clock] = None
         self._start_game()
         return self.agent

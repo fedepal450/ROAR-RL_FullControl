@@ -227,9 +227,9 @@ class OccupancyGridMap(Module):
             np.ndarray of float32
         """
         if transform is None:
-            return np.float32(self._map.copy())
+            return np.float32(self._map)
         else:
-            map_to_view = np.float32(self._map.copy())
+            map_to_view = np.float32(self._map)
             occu_cord = self.location_to_occu_cord(
                 location=transform.location)
             x, y = occu_cord[0]

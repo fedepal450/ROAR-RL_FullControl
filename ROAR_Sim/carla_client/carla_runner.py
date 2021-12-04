@@ -263,19 +263,19 @@ class CarlaRunner:
 
         """
         try:
-            self.sensor_data: SensorsData = \
-                self.carla_bridge.convert_sensor_data_from_source_to_agent(
-                    {
-                        "front_rgb": None if self.world.front_rgb_sensor_data is None
-                        else self.world.front_rgb_sensor_data,
-                        "rear_rgb": None if self.world.rear_rgb_sensor_data is None
-                        else self.world.rear_rgb_sensor_data,
-                        "front_depth":
-                            None if self.world.front_depth_sensor_data is None else
-                            self.world.front_depth_sensor_data,
-                        "imu": self.world.imu_sensor
-                    }
-                )
+            # self.sensor_data: SensorsData = \
+            #     self.carla_bridge.convert_sensor_data_from_source_to_agent(
+            #         {
+            #             "front_rgb": None if self.world.front_rgb_sensor_data is None
+            #             else self.world.front_rgb_sensor_data,
+            #             "rear_rgb": None if self.world.rear_rgb_sensor_data is None
+            #             else self.world.rear_rgb_sensor_data,
+            #             "front_depth":
+            #                 None if self.world.front_depth_sensor_data is None else
+            #                 self.world.front_depth_sensor_data,
+            #             "imu": self.world.imu_sensor
+            #         }
+            #     )
             if self.world.player.is_alive:
                 self.vehicle_state = self.carla_bridge.convert_vehicle_from_source_to_agent(self.world.player)
         except Exception as e:

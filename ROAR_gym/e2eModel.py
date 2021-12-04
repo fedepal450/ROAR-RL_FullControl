@@ -57,6 +57,8 @@ def main(pass_num):
             features_extractor_kwargs=dict(features_dim=256)
         )
 
+    run_fps=20
+
     training_kwargs = dict(
         learning_rate=0.001,
         batch_size=64,
@@ -64,7 +66,10 @@ def main(pass_num):
         seed=1,
         device="cuda",
         verbose=1,
-        tensorboard_log=(Path(model_dir_path) / "tensorboard").as_posix()
+        tensorboard_log=(Path(model_dir_path) / "tensorboard").as_posix(),
+        # use_sde=True,
+        # sde_sample_freq=3,
+        n_steps=50*run_fps
     )
 
 
@@ -75,10 +80,10 @@ def main(pass_num):
         model = PPO.load(latest_model_path, env=env, policy_kwargs=policy_kwargs, **training_kwargs)
     print("Model Loaded Successfully")
     logging_callback = LoggingCallback(model=model)
-    checkpoint_callback = CheckpointCallback(save_freq=5000, verbose=2, save_path=(model_dir_path/"logs").as_posix())
-    event_callback = EveryNTimesteps(n_steps=2000, callback=checkpoint_callback)
+    checkpoint_callback = CheckpointCallback(save_freq=500*run_fps, verbose=2, save_path=(model_dir_path/"logs").as_posix())
+    event_callback = EveryNTimesteps(n_steps=500*run_fps, callback=checkpoint_callback)
     callbacks = CallbackList([checkpoint_callback, event_callback, logging_callback])
-    model = model.learn(total_timesteps=int(1e6), callback=callbacks, reset_num_timesteps=False)
+    model = model.learn(total_timesteps=int(1e6),log_interval=1000,eval_freq=500*run_fps, callback=callbacks, reset_num_timesteps=False)
     model.save(model_dir_path / f"roar_e2e_model_{pass_num}")
     print("Successful Save!")
 

@@ -49,9 +49,9 @@ class CustomMaxPoolCNN(BaseFeaturesExtractor):
                 th.as_tensor(observation_space.sample()[None]).float()
             ).shape[1]
 
-        self.linear = nn.Sequential(nn.Linear(n_flatten, n_flatten*2), nn.ReLU(),
-                                    nn.Linear(n_flatten*2, n_flatten), nn.ReLU(),
-                                    nn.Linear(n_flatten, features_dim),)
+        self.linear = nn.Sequential(nn.Linear(n_flatten, n_flatten * 2), nn.ReLU(),
+                                    nn.Linear(n_flatten * 2, n_flatten), nn.ReLU(),
+                                    nn.Linear(n_flatten, features_dim), )
 
     def forward(self, observations: th.Tensor) -> th.Tensor:
         return self.linear(self.cnn(observations))
@@ -73,10 +73,11 @@ class CustomMaxPoolCNN_no_map(BaseFeaturesExtractor):
                                     nn.Linear(128, 256), nn.ReLU(),
                                     nn.Linear(256, 256), nn.ReLU(),
                                     nn.Linear(256, 256), nn.ReLU(),
-                                    nn.Linear(256, features_dim),)
+                                    nn.Linear(256, features_dim), )
 
     def forward(self, observations: th.Tensor) -> th.Tensor:
         return self.linear(observations)
+
 
 def find_latest_model(root_path: Path) -> Optional[Path]:
     import os
