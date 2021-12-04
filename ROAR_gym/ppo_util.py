@@ -4,7 +4,6 @@ from typing import Optional, Dict
 import gym
 import torch as th
 from torch import nn
-import numpy as np
 
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 
@@ -110,11 +109,11 @@ class SingleFrame(nn.Module):
         frames = x[0:2]
         frames = frames.reshape(1,2,224,224)
         v6 = x[2]
-        v6 = np.reshape(v6, -1)
+        v6 = th.reshape(v6, (-1,))
         v6 = v6[0:v6_len]
         # print(frames.shape)
         one = self.Resnet18(frames)
-        one = np.reshape(one, -1)
+        one = th.reshape(one, (-1,))
         two = self.rep(v6)
         out = th.cat((one, two))
         return out
