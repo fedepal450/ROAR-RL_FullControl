@@ -56,6 +56,145 @@ class CustomMaxPoolCNN(BaseFeaturesExtractor):
     def forward(self, observations: th.Tensor) -> th.Tensor:
         return self.linear(self.cnn(observations))
 
+v6_len = 12
+
+
+class ResNet(nn.Module):
+    def __init__(self, input_channels, inner_channels):
+        super().__init__()
+        self.cnn = nn.Sequential(
+            nn.BatchNorm2d(input_channels),
+            nn.Conv2d(input_channels, inner_channels, kernel_size=1),
+            nn.BatchNorm2d(inner_channels),
+            nn.ReLU(),
+            nn.Conv2d(inner_channels, inner_channels, kernel_size=3, padding=1),
+            nn.BatchNorm2d(inner_channels),
+            nn.ReLU(),
+            nn.Conv2d(inner_channels, input_channels, kernel_size=1),
+        )
+
+    def forward(self, inputs):
+        return self.cnn(inputs) + inputs
+
+
+class SingleFrame(nn.Module):
+    def __init__(self, v6_len=13, rep_scale=20, k=8):
+        super().__init__()
+        self.res = nn.Sequential(
+            nn.Conv2d(2, k, kernel_size=(5, 5)),
+            nn.ReLU(),
+            ResNet(k, k * 4),
+            ResNet(k, k * 4),
+            nn.MaxPool2d(2),
+            ResNet(k, k * 4),
+            ResNet(k, k * 4),
+            nn.MaxPool2d(2),
+            ResNet(k, k * 4),
+            ResNet(k, k * 4),
+            nn.MaxPool2d(2),
+            ResNet(k, k * 4),
+            ResNet(k, k * 4),
+            nn.BatchNorm2d(k),
+            nn.Flatten()
+        )
+        self.Resnet18 = th.hub.load('pytorch/vision:v0.10.0', 'resnet18', pretrained=True)
+        # th.hub.load(resnet18)
+        # resnet18 = models.resnet18()
+        self.Resnet18.conv1 = th.nn.Conv2d(2, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
+        # Resnet18.fc = th.nn.Linear(512, 1)
+
+        self.rep = nn.Linear(v6_len, v6_len * rep_scale)
+
+    def forward(self, x, v6_len=13):
+        frames = x[0:2]
+        v6 = x[2]
+        v6 = np.reshape(v6, -1)
+        v6 = v6[0:v6_len]
+        # print(frames.shape)
+        one = self.Resnet18(frames)
+        # print(one.shape)
+        two = self.rep(v6)
+        # print(two.shape)
+        out = th.cat((one, two), 1)
+        return out
+
+
+class Part1(nn.Module):
+    def __init__(self, v6_len=12):
+        super().__init__()
+        self.frame_process = SingleFrame()
+
+    def forward(self, x, num_frames=4):
+        head = []
+        for i in range(num_frames):
+            head.append(self.frame_process(x[0][i]))
+            #1 fram_stack(batch)
+        return th.stack(head)
+
+
+class RNNModel(nn.Module):
+    def __init__(self, input_dim, hidden_dim, layer_dim, output_dim):
+        super(RNNModel, self).__init__()
+        # Hidden dimensions
+        self.hidden_dim = hidden_dim
+
+        # Number of hidden layers
+        self.layer_dim = layer_dim
+
+        # Building your RNN
+        # batch_first=True causes input/output tensors to be of shape
+        # (batch_dim, seq_dim, input_dim)
+        # batch_dim = number of samples per batch
+        self.rnn = nn.RNN(input_dim, hidden_dim, layer_dim, batch_first=True, nonlinearity='relu')
+
+        # Readout layer
+        self.fc = nn.Linear(hidden_dim, output_dim)
+
+    def forward(self, x):
+        # Initialize hidden state with zeros
+        # (layer_dim, batch_size, hidden_dim)
+        h0 = th.zeros(self.layer_dim, x.size(0), self.hidden_dim).requires_grad_()
+
+        # We need to detach the hidden state to prevent exploding/vanishing gradients
+        # This is part of truncated backpropagation through time (BPTT)
+        out, hn = self.rnn(x, h0.detach())
+
+        # Index hidden state of last time step
+        # out.size() --> 100, 28, 10
+        # out[:, -1, :] --> 100, 10 --> just want last time step hidden states!
+        out = self.fc(out[:, -1, :])
+        # out.size() --> 100, 10
+        return out
+
+
+class Part2(nn.Module):
+    def __init__(self, v6_len=6, input_dim=3128):
+        super().__init__()
+        self.seq = RNNModel(input_dim, input_dim * 2, 1, 256)
+
+    def forward(self, x):
+        # print(x[0].shape)
+        return self.seq(x)
+
+
+class CustomMaxPoolCNN_combine(BaseFeaturesExtractor):
+    """
+    the CNN network that interleaves convolution & maxpooling layers, used in a
+    previous DQN implementation and shows reasonable results
+    """
+
+    def __init__(self, observation_space: gym.spaces.Box, features_dim: int = 256):
+        super(CustomMaxPoolCNN, self).__init__(observation_space, features_dim)
+        # We assume CxWxH images (channels last)
+        n_input_channels = observation_space.shape[0]
+
+        self.fullStack = nn.Sequential(
+            Part1(),
+            Part2()
+        )
+
+    def forward(self, observations: th.Tensor) -> th.Tensor:
+        return self.fullStack(observations)
 
 class CustomMaxPoolCNN_no_map(BaseFeaturesExtractor):
     """
