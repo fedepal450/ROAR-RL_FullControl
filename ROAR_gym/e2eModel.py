@@ -29,6 +29,7 @@ except:
     from ROAR_Gym.ROAR_Gym.envs.roar_env import LoggingCallback
 from datetime import datetime
 
+CUDA_VISIBLE_DEVICES=1
 
 def main(pass_num):
     # Set gym-carla environment

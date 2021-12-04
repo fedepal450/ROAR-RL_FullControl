@@ -7,6 +7,7 @@ from torch import nn
 
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 
+cuda0 = th.device('cuda:0')
 
 class CustomMaxPoolCNN(BaseFeaturesExtractor):
     """
@@ -153,11 +154,11 @@ class RNNModel(nn.Module):
     def forward(self, x):
         # Initialize hidden state with zeros
         # (layer_dim, batch_size, hidden_dim)
-        h0 = th.zeros(self.layer_dim, x.size(0), self.hidden_dim).requires_grad_()
+        h0 = th.zeros(self.layer_dim, x.size(0), self.hidden_dim).requires_grad_().to(cuda0)
 
         # We need to detach the hidden state to prevent exploding/vanishing gradients
         # This is part of truncated backpropagation through time (BPTT)
-        out, hn = self.rnn(x, h0.detach())
+        out, hn = self.rnn(x, h0)
 
         # Index hidden state of last time step
         # out.size() --> 100, 28, 10
