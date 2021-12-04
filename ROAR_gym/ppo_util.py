@@ -4,6 +4,7 @@ from typing import Optional, Dict
 import gym
 import torch as th
 from torch import nn
+import numpy as np
 
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 
@@ -107,15 +108,15 @@ class SingleFrame(nn.Module):
 
     def forward(self, x, v6_len=13):
         frames = x[0:2]
+        frames = frames.reshape(1,2,224,224)
         v6 = x[2]
         v6 = np.reshape(v6, -1)
         v6 = v6[0:v6_len]
         # print(frames.shape)
         one = self.Resnet18(frames)
-        # print(one.shape)
+        one = np.reshape(one, -1)
         two = self.rep(v6)
-        # print(two.shape)
-        out = th.cat((one, two), 1)
+        out = th.cat((one, two))
         return out
 
 
@@ -168,12 +169,16 @@ class RNNModel(nn.Module):
 
 
 class Part2(nn.Module):
-    def __init__(self, v6_len=6, input_dim=3128):
+    def __init__(self, v6_len=6, input_dim=1260):
         super().__init__()
         self.seq = RNNModel(input_dim, input_dim * 2, 1, 256)
 
+        # self.lstm = th.nn.LSTM(4, 1, input_size=input_dim)
+        # (input_size=10, hidden_size=20, num_layers=2)
+
     def forward(self, x):
-        # print(x[0].shape)
+        x = x.reshape(1, len(x),len(x[0]))
+        # print(x.shape)
         return self.seq(x)
 
 
@@ -184,7 +189,7 @@ class CustomMaxPoolCNN_combine(BaseFeaturesExtractor):
     """
 
     def __init__(self, observation_space: gym.spaces.Box, features_dim: int = 256):
-        super(CustomMaxPoolCNN, self).__init__(observation_space, features_dim)
+        super(CustomMaxPoolCNN_combine, self).__init__(observation_space, features_dim)
         # We assume CxWxH images (channels last)
         n_input_channels = observation_space.shape[0]
 

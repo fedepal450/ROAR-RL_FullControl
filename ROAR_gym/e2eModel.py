@@ -21,7 +21,7 @@ from stable_baselines3.ppo.ppo import PPO
 from stable_baselines3.ppo.policies import CnnPolicy
 
 from stable_baselines3.common.callbacks import CheckpointCallback, EveryNTimesteps, CallbackList
-from ppo_util import find_latest_model, CustomMaxPoolCNN,CustomMaxPoolCNN_no_map##?
+from ppo_util import find_latest_model, CustomMaxPoolCNN,CustomMaxPoolCNN_no_map, CustomMaxPoolCNN_combine
 
 try:
     from ROAR_Gym.envs.roar_env import LoggingCallback
@@ -51,13 +51,18 @@ def main(pass_num):
             features_extractor_class=CustomMaxPoolCNN_no_map,
             features_extractor_kwargs=dict(features_dim=256)
         )
+    elif env.mode=='combine':
+        policy_kwargs = dict(
+            features_extractor_class=CustomMaxPoolCNN_combine,
+            features_extractor_kwargs=dict(features_dim=256)
+        )
     else:
         policy_kwargs = dict(
             features_extractor_class=CustomMaxPoolCNN,
             features_extractor_kwargs=dict(features_dim=256)
         )
 
-    run_fps=20
+    run_fps=30
 
     training_kwargs = dict(
         learning_rate=0.001,

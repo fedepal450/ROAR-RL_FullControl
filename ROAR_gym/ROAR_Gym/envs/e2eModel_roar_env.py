@@ -15,40 +15,27 @@ from collections import OrderedDict
 from gym.spaces import Discrete, Box
 import cv2
 
-# Define the discrete action space
-# DISCRETE_ACTIONS = {
-#     0: [0.0, 0.0],  # Coast
-#     1: [0.0, -0.5],  # Turn Left
-#     2: [0.0, 0.5],  # Turn Right
-#     3: [1.0, 0.0],  # Forward
-#     4: [-0.5, 0.0],  # Brake
-#     5: [1.0, -0.5],  # Bear Left & accelerate
-#     6: [1.0, 0.5],  # Bear Right & accelerate
-#     7: [-0.5, -0.5],  # Bear Left & decelerate
-#     8: [-0.5, 0.5],  # Bear Right & decelerate
-# }
-# DISCRETE_ACTIONS = {
-#     0: [0.5, 0.0, 0.0],  # Coast
-#     1: [0.5, -0.5, 0.0],  # Turn Left
-#     2: [0.5, 0.5, 0.0],  # Turn Right
-#     3: [0.5, 0.0, 0.0],  # Forward
-#     4: [0.5, 0.0, 0.0],  # Brake
-#     5: [0.5, -0.5, 0.0],  # Bear Left & accelerate
-#     6: [0.5, 0.5, 0.0],  # Bear Right & accelerate
-#     7: [0.5, -0.5, 0.0],  # Bear Left & decelerate
-#     8: [0.5, 0.5, 0.0],  # Bear Right & decelerate
-# }
-mode='map'
+mode='combine'
 if mode=='no_map':
     FRAME_STACK = 1
 else:
     FRAME_STACK = 4
-CONFIG = {
-    #max values are 280x280
-    #original values are 80x80
-    "x_res": 80,
-    "y_res": 80
-}
+
+if mode=='combine':
+    CONFIG = {
+        # max values are 280x280
+        # original values are 80x80
+        "x_res": 224,
+        "y_res": 224
+    }
+else:
+    CONFIG = {
+        # max values are 280x280
+        # original values are 80x80
+        "x_res": 80,
+        "y_res": 80
+    }
+
 
 
 class ROARppoEnvE2E(ROAREnv):
