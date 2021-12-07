@@ -15,13 +15,13 @@ from collections import OrderedDict
 from gym.spaces import Discrete, Box
 import cv2
 
-mode='combine'
+mode='baseline'
 if mode=='no_map':
     FRAME_STACK = 1
 else:
     FRAME_STACK = 4
 
-if mode=='combine':
+if mode=='combine' or mode=='baseline':
     CONFIG = {
         # max values are 280x280
         # original values are 80x80
@@ -52,6 +52,8 @@ class ROARppoEnvE2E(ROAREnv):
             self.observation_space = Box(low=np.tile([-1],(13)), high=np.tile([1],(13)), dtype=np.float32)
         elif self.mode=='combine':
             self.observation_space = Box(-10, 1, shape=(FRAME_STACK,3, CONFIG["x_res"], CONFIG["y_res"]), dtype=np.float32)
+        elif self.mode=='baseline':
+            self.observation_space = Box(-10, 1, shape=(FRAME_STACK,2, CONFIG["x_res"], CONFIG["y_res"]), dtype=np.float32)
         else:
             self.observation_space = Box(-10, 1, shape=(FRAME_STACK, CONFIG["x_res"], CONFIG["y_res"]), dtype=np.float32)
         self.prev_speed = 0
@@ -222,6 +224,42 @@ class ROARppoEnvE2E(ROAREnv):
             data_input=np.zeros_like(map)
             data_input[0,:13]=data
             return np.array([map_input,waypoint,data_input])
+
+        elif mode=='baseline':
+            vehicle_state=self.agent.vehicle.to_array() #12
+            line_location=self.agent.bbox.to_array(vehicle_state[3],vehicle_state[5]) #4
+            v_speed=np.sqrt(np.square(vehicle_state[0])+np.square(vehicle_state[1]))/150
+            v_height=vehicle_state[4]/100
+            v_roll,v_pitch,v_yaw=vehicle_state[[6,7,8]]/180
+            v_throttle,v_steering,v_braking=vehicle_state[[9,10,11]]
+            x_dis,y_dis,xy_dis=line_location[:3]/40
+            l_yaw,vtol_yaw=line_location[3:]
+            data=np.array([v_speed,v_height,v_roll,v_pitch,v_yaw,v_throttle,v_steering,v_braking,x_dis,y_dis,xy_dis,l_yaw,vtol_yaw])
+
+            map = self.agent.occupancy_map.get_map(transform=self.agent.vehicle.transform,
+                                                    view_size=(CONFIG["x_res"], CONFIG["y_res"]),
+                                                    arbitrary_locations=self.agent.bbox.get_visualize_locs(),
+                                                    arbitrary_point_value=self.agent.bbox.get_value(),
+                                                    vehicle_velocity=self.agent.vehicle.velocity,
+                                                    # rotate=self.agent.bbox.get_yaw()
+                                                    )
+            # data = cv2.resize(occu_map, (CONFIG["x_res"], CONFIG["y_res"]), interpolation=cv2.INTER_AREA)
+            #cv2.imshow("Occupancy Grid Map", cv2.resize(np.float32(data), dsize=(500, 500)))
+
+            # data_view=np.sum(data,axis=2)
+            cv2.imshow("data", map) # uncomment to show occu map
+            cv2.waitKey(1)
+            # yaw_angle=self.agent.vehicle.transform.rotation.yaw
+            # velocity=self.agent.vehicle.get_speed(self.agent.vehicle)
+            # data[0,0,2]=velocity
+            map_input=map.copy()
+            map_input[map_input!=1]=0
+            map_input*=10
+            waypoint=map.copy()
+            waypoint[waypoint==1]=0
+            data_input=np.zeros_like(map)
+            data_input[0,:13]=data
+            return np.array([map_input,waypoint])
 
         else:
             data = self.agent.occupancy_map.get_map(transform=self.agent.vehicle.transform,

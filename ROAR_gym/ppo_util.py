@@ -4,10 +4,167 @@ from typing import Optional, Dict
 import gym
 import torch as th
 from torch import nn
+import torch.nn.functional as F
+import torchvision
 
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 
-cuda0 = th.device('cuda:0')
+cuda0 = th.device('cuda:0' if th.cuda.is_available() else 'cpu')
+
+
+# model adapted from https://www.kaggle.com/mdteach/image-captioning-with-attention-pytorch/data
+class Attention(nn.Module):
+    def __init__(self, encoder_dim, decoder_dim, attention_dim):
+        super(Attention, self).__init__()
+
+        self.attention_dim = attention_dim
+
+        self.W = nn.Linear(decoder_dim, attention_dim)
+        self.U = nn.Linear(encoder_dim, attention_dim)
+
+        self.A = nn.Linear(attention_dim, 1)
+
+    def forward(self, features, hidden_state):
+        u_hs = self.U(features)  # (batch_size,64,attention_dim)
+        w_ah = self.W(hidden_state)  # (batch_size,attention_dim)
+
+        combined_states = th.tanh(u_hs + w_ah.unsqueeze(1))  # (batch_size,64,attemtion_dim)
+
+        attention_scores = self.A(combined_states)  # (batch_size,64,1)
+        attention_scores = attention_scores.squeeze(2)  # (batch_size,64)
+
+        alpha = F.softmax(attention_scores, dim=1)  # (batch_size,64)
+
+        attention_weights = features * alpha.unsqueeze(2)  # (batch_size,64,features_dim)
+        attention_weights = attention_weights.sum(dim=1)  # (batch_size,64)
+
+        return attention_weights#,alphas
+
+
+class DecoderRNN(nn.Module):
+    def __init__(self, embed_size, out_dim, attention_dim, encoder_dim, decoder_dim, drop_prob=0.3):
+        super().__init__()
+
+        # save the model param
+        self.out_dim = out_dim
+        self.attention_dim = attention_dim
+        self.decoder_dim = decoder_dim
+
+        # self.embedding = nn.Embedding(vocab_size, embed_size)
+        self.attention = Attention(encoder_dim, decoder_dim, attention_dim)
+
+        self.init_h = nn.Linear(encoder_dim, decoder_dim)
+        self.init_c = nn.Linear(encoder_dim, decoder_dim)
+        self.lstm_cell = nn.LSTMCell(encoder_dim, decoder_dim, bias=True)
+        self.f_beta = nn.Linear(decoder_dim, encoder_dim)
+
+        self.fcn = nn.Linear(decoder_dim, out_dim)
+        self.drop = nn.Dropout(drop_prob)
+
+    def forward(self, features):
+        # # vectorize the caption
+        # embeds = self.embedding(captions)
+
+        # Initialize LSTM state
+        h, c = self.init_hidden_state(features)  # (batch_size, decoder_dim)
+
+        # get the seq length to iterate
+        seq_length = features.size(0)
+        batch_len = 1
+        #num_features = features.size(1)
+
+        outputs = th.zeros(batch_len, seq_length, self.out_dim).to(cuda0)
+
+        for s in range(seq_length):
+            context = self.attention(features, h)
+            #lstm_input = th.cat((embeds[:, s], context), dim=1)
+            h, c = self.lstm_cell(context, (h, c))
+
+            output = self.fcn(self.drop(h))
+            # output =
+
+            outputs[:, s] = output
+
+        print(outputs.shape)
+
+        return outputs
+
+    def init_hidden_state(self, encoder_out):
+        mean_encoder_out = encoder_out.mean(dim=1)
+        h = self.init_h(mean_encoder_out)  # (batch_size, decoder_dim)
+        c = self.init_c(mean_encoder_out)
+        return h, c
+
+
+class EncoderCNNtrain18(nn.Module):
+    def __init__(self):
+        super(EncoderCNNtrain18, self).__init__()
+        resnet = torchvision.models.resnet18(pretrained=True)
+        # for param in resnet.parameters():
+        #    param.requires_grad_(False)
+        with th.no_grad():
+            w = resnet.conv1.weight[:64,:2]
+
+        modules = list(resnet.children())[:-2]
+        modules[0] = th.nn.Conv2d(2, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
+        modules[0].weight = nn.Parameter(w)
+        self.resnet = nn.Sequential(*modules)
+
+    def forward(self, images):
+        features = self.resnet(images)  # (batch_size,512,8,8)
+        features = features.permute(0, 2, 3, 1)  # (batch_size,8,8,512)
+        features = features.view(features.size(0), -1, features.size(-1))  # (batch_size,49,512)
+        # print(features.shape)
+        return features
+
+
+class EncoderDecodertrain18(nn.Module):
+    def __init__(self, embed_size, attention_dim, encoder_dim, decoder_dim, out_dim, drop_prob=0.3):
+        super().__init__()
+        self.encoder = EncoderCNNtrain18()
+        self.decoder = DecoderRNN(
+            embed_size=embed_size,
+            attention_dim=attention_dim,
+            encoder_dim=encoder_dim,
+            decoder_dim=decoder_dim,
+            out_dim=out_dim
+        )
+        self.just_LSTM = th.nn.LSTM(input_size=25088,num_layers=3, hidden_size=256, batch_first=True)
+        self.flat = nn.Sequential(
+            th.nn.Flatten(start_dim=1, end_dim=-1),
+            #th.nn.Linear(25088, 512)
+        )
+
+    def forward(self, images):
+        features = self.encoder(images) #features becomes 4,49,512
+        features = self.flat(features)
+        features = th.reshape(features,(4,1,features.shape[1]))
+
+        outputs = self.just_LSTM(features)
+
+        out = outputs[0][0] #use for out shape [1,256]
+        #out = th.reshape(outputs[0],(4,256))  # use for out shape [4,256]
+        return out
+
+class CustomMaxPoolCNN_attention(BaseFeaturesExtractor):
+
+    def __init__(self, observation_space: gym.spaces.Box, features_dim: int = 256):
+        super(CustomMaxPoolCNN_attention, self).__init__(observation_space, features_dim)
+        # We assume CxWxH images (channels last)
+        n_input_channels = observation_space.shape[0]
+
+        self.fullStack = EncoderDecodertrain18(
+            embed_size=200,
+            attention_dim=300,
+            encoder_dim=512,
+            decoder_dim=300,
+            out_dim=features_dim
+        )
+
+    def forward(self, observations: th.Tensor) -> th.Tensor:
+        return self.fullStack(observations[0])
+
+
 
 class CustomMaxPoolCNN(BaseFeaturesExtractor):
     """
