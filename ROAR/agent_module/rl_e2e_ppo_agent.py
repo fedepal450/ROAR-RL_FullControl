@@ -1,4 +1,3 @@
-from logging import currentframe
 from ROAR.configurations.configuration import Configuration as AgentConfig
 from ROAR.control_module.pid_controller import PIDController#TO REMOVE
 from ROAR.planning_module.local_planner.loop_simple_waypoint_following_local_planner import \
@@ -92,24 +91,20 @@ class RLe2ePPOAgent(Agent):
             return dist
         return False, 0.0
         """
-        #import pdb; pdb.set_trace()
         if self.counter < len(self.bbox_list):
-            currentframe_crossed = []
             while(True):
                 crossed, dist = self.bbox_list[self.counter].has_crossed(self.vehicle.transform)
                 if crossed:
-                    self.cross_reward+=crossed
-                    currentframe_crossed.append(self.counter)
                     self.counter += 1
+                    self.cross_reward+=crossed
+                    if len(self.frame_queue) < 4:
+                        self.frame_queue.append(self.counter)
+                    else:
+                        self.frame_queue.popleft()
+                        self.frame_queue.append(self.counter)
                 else:
+                    self.frame_queue.append(-1)
                     break
-            if len(self.frame_queue) < 4 and len(currentframe_crossed):
-                self.frame_queue.append(currentframe_crossed)
-            elif len(currentframe_crossed):
-                self.frame_queue.popleft()
-                self.frame_queue.append(currentframe_crossed)
-            else:
-                self.frame_queue.append([-1])
             return dist
         return False, 0.0
 
