@@ -240,7 +240,7 @@ class OccupancyGridMap(Module):
             # vehicle_view=np.zeros_like(map_to_view)
             map_to_view[y, x] += 0.8
             if vehicle_velocity:
-                map_to_view[y+int(vehicle_velocity.y/4), x+int(vehicle_velocity.x/4)]+=0.7
+                map_to_view[y+int(vehicle_velocity.y/2), x+int(vehicle_velocity.x/2)]+=0.7
 
             if arbitrary_point_value is not None and arbitrary_locations is not None:
                 coord=[self.location_to_occu_cord(location=location)[0] for location in arbitrary_locations]

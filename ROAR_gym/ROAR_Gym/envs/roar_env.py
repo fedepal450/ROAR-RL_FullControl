@@ -1,3 +1,5 @@
+import time
+
 import gym
 from ROAR_Sim.configurations.configuration import Configuration as CarlaConfig
 import logging
@@ -29,7 +31,7 @@ class ROAREnv(gym.Env, ABC):
 
         num_frames_per_step: int = params.get("num_frames_per_step", 1)
         # use_manual_control: bool = params.get("use_manual_control", False)
-        self.max_collision_allowed: int = params.get("max_collision", 1)
+        self.max_collision_allowed: int = params.get("max_collision", 0)
         self.logger = logging.getLogger("ROAR Gym")
         self.agent_config = agent_config
         self.EgoAgentClass = ego_agent_class
@@ -55,20 +57,19 @@ class ROAREnv(gym.Env, ABC):
         Returns:
             Tuple of Observation, reward, is done, other information
         """
-        self.clock.tick_busy_loop(60)
+        agent_control=self.agent.kwargs.get("control")
+        carla_control = self.carla_runner.carla_bridge.convert_control_from_agent_to_source(agent_control)
+        self.carla_runner.world.player.apply_control(carla_control)
+
+        self.clock.tick()
         should_continue, carla_control = self.carla_runner.controller.parse_events(client=self.carla_runner.client,
                                                                                    world=self.carla_runner.world,
                                                                                    clock=self.clock)
         self.carla_runner.world.tick(self.clock)
         self.carla_runner.convert_data()
-        if self.carla_runner.agent_settings.enable_autopilot:
-            if self.agent is None:
-                raise Exception(
-                    "In autopilot mode, but no agent is defined.")
-            agent_control = self.agent.run_step(vehicle=self.carla_runner.vehicle_state)
-            carla_control = self.carla_runner.carla_bridge.convert_control_from_agent_to_source(agent_control)
-        self.carla_runner.world.player.apply_control(carla_control)
-        return self._get_obs(), self.get_reward(), self._terminal(), self._get_info(action)
+
+        self.agent.run_step(vehicle=self.carla_runner.vehicle_state)
+        return self._get_obs(), self.get_reward(), self._terminal(), self._get_info()
 
     def reset(self) -> Any:
         self.carla_runner.on_finish()

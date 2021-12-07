@@ -96,9 +96,9 @@ class ROARppoEnvE2E(ROAREnv):
             self.crash_check = False
             self.update_highscore()
             self.ep_rewards = 0
-        return np.array(obs), self.frame_reward, self._terminal(), self._get_info(action)
+        return np.array(obs), self.frame_reward, self._terminal(), self._get_info()
 
-    def _get_info(self, action: Any) -> dict:
+    def _get_info(self) -> dict:
         info_dict = OrderedDict()
         info_dict["Current HIGHSCORE"] = self.highscore
         info_dict["Furthest Checkpoint"] = self.highest_chkpt*self.agent.interval

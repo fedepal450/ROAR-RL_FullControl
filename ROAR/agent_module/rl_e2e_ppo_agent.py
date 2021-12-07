@@ -76,10 +76,6 @@ class RLe2ePPOAgent(Agent):
 
         self.vehicle = vehicle
         self.curr_dist_to_strip = self.bbox_step()
-        if self.kwargs.get("control") is None:
-            return VehicleControl()
-        else:
-            return self.kwargs.get("control")
 
     def bbox_step(self):
         """

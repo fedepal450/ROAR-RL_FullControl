@@ -52,13 +52,12 @@
     },
     "occu_map_config_path": "../ROAR_Sim/configurations/occu_map_config.json",
     "obstacle_from_depth_config_path": "../ROAR_Sim/configurations/obstacle_from_depth_config.json",
-    "waypoint_file_path": "../ROAR_Sim/data/berkeley_minor_samedistance_waypoints.txt",
+    "waypoint_file_path": "../ROAR_Sim/data/berkeley_minor_sdzl_waypoints.txt",
     "pid_config_file_path": "../ROAR_Sim/configurations/pid_config.json",
     "simple_waypoint_local_planner_config_file_path": "../ROAR_Sim/configurations/simple_waypoint_local_planner_config.json",
     "output_data_folder_path": "./output",
     "enable_autopilot": true,
     "spawn_point_id": 1,
     "show_sensors_data": true,
-    "save_sensor_data": false,
-    "max_speed": 130
+    "save_sensor_data": false
 }

@@ -26,7 +26,7 @@
   "gamma": 2.2,
   "save_semantic_segmentation": false,
   "print_keyboard_hint": false,
-  "synchronous_mode": false,
+  "synchronous_mode": true,
   "no_rendering_mode": false,
   "fixed_delta_seconds": 0.05,
   "should_spawn_npcs": false,

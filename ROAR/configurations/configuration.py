@@ -47,11 +47,9 @@ class Configuration(BaseModel):
                                                 image_size_y=600),
                                  title="Rear RGB Camera")
     # data path
-    waypoint_file_path: str = Field(default=(Path(
-        os.getcwd()) / "data" / "berkeley_minor_waypoints.txt").as_posix())
+    waypoint_file_path: str = Field(default=(Path(os.getcwd()) / "data" / "berkeley_minor_sdzl_waypoints.txt").as_posix())
 
-    json_waypoint_file_path: str = Field(default=(Path(
-        os.getcwd()) / "data" / "easy_map_waypoints.json").as_posix())
+    json_waypoint_file_path: str = Field(default=(Path(os.getcwd()) / "data" / "easy_map_waypoints.json").as_posix())
 
     json_qr_code_file_path: str = Field(default=(Path(
         os.getcwd()) / "ROAR_Jetson" / "data" / "track_1.json"

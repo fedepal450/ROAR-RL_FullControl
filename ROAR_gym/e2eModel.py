@@ -45,7 +45,6 @@ def main(pass_num):
     model_dir_path = Path("./output/PPOe2e")
 
     env = gym.make('roar-e2e-ppo-v0', params=params)
-    env.reset()
 
     if env.mode=='no_map':
         policy_kwargs = dict(
@@ -63,7 +62,7 @@ def main(pass_num):
             features_extractor_kwargs=dict(features_dim=256)
         )
 
-    run_fps=30
+    run_fps=15
 
     training_kwargs = dict(
         learning_rate=0.001,
