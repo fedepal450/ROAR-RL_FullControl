@@ -62,7 +62,7 @@ def main(pass_num):
             features_extractor_kwargs=dict(features_dim=256)
         )
 
-    run_fps=15
+    run_fps=20
 
     training_kwargs = dict(
         learning_rate=0.001,
@@ -74,7 +74,7 @@ def main(pass_num):
         tensorboard_log=(Path(model_dir_path) / "tensorboard").as_posix(),
         # use_sde=True,
         # sde_sample_freq=3,
-        n_steps=20*run_fps
+        n_steps=30*run_fps
     )
 
 

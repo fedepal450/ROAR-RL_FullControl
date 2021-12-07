@@ -147,7 +147,7 @@ class ROARppoEnvE2E(ROAREnv):
             self.speeds=[]
             self.prev_int_counter =self.agent.int_counter
             #crossing reward
-            reward += 0.1 * (self.agent.cross_reward - self.prev_cross_reward)*self.agent.interval
+            reward += 0.3 * (self.agent.cross_reward - self.prev_cross_reward)*self.agent.interval
 
         if self.carla_runner.get_num_collision() > 0:
             reward -= 100#0 /(min(total_num_cross,10))
@@ -215,9 +215,10 @@ class ROARppoEnvE2E(ROAREnv):
             # data[0,0,2]=velocity
             map_input=map.copy()
             map_input[map_input!=1]=0
-            map_input*=-10
+            map_input*=255
             waypoint=map.copy()
             waypoint[waypoint==1]=0
+            waypoint*=255
             data_input=np.zeros_like(map)
             data_input[0,:13]=data
             return np.array([map_input,waypoint,data_input])
