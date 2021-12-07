@@ -143,11 +143,11 @@ class ROARppoEnvE2E(ROAREnv):
         if self.agent.cross_reward > self.prev_cross_reward:
             num_crossed = self.agent.int_counter - self.prev_int_counter
             #speed reward
-            reward+= np.average(self.speeds) * num_crossed*5
+            reward+= np.average(self.speeds) * num_crossed/4
             self.speeds=[]
             self.prev_int_counter =self.agent.int_counter
             #crossing reward
-            reward += 0.3 * (self.agent.cross_reward - self.prev_cross_reward)*self.agent.interval
+            reward += 4*(self.agent.cross_reward - self.prev_cross_reward)*self.agent.interval
 
         if self.carla_runner.get_num_collision() > 0:
             reward -= 100#0 /(min(total_num_cross,10))
