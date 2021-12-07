@@ -56,7 +56,6 @@ class RLe2ePPOAgent(Agent):
         self.bbox: Optional[LineBBox] = None
         self.bbox_list = []# list of bbox
         self.frame_queue = deque(maxlen=4)
-        self.vt_queue = deque(maxlen=4)
         #self._get_next_bbox()
         self._get_all_bbox()
 
@@ -111,12 +110,6 @@ class RLe2ePPOAgent(Agent):
                 self.frame_queue.append(currentframe_crossed)
             else:
                 self.frame_queue.append([-1])
-            # add vehicle tranform
-            if len(self.vt_queue) < 4:
-                self.vt_queue.append(self.vehicle.transform)
-            else:
-                self.vt_queue.popleft()
-                self.vt_queue.append(self.vehicle.transform)
             return dist
         return False, 0.0
 
