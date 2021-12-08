@@ -61,6 +61,7 @@ class RLe2ePPOAgent(Agent):
         self.vt_queue = deque([None, None, None], maxlen=4)
         #self._get_next_bbox()
         self._get_all_bbox()
+        self.occupancy_map.draw_bbox_list(self.bbox_list)
         for _ in range(4):
             self.bbox_step()
 
@@ -117,6 +118,7 @@ class RLe2ePPOAgent(Agent):
                 crossed, dist = self.bbox_list[self.int_counter].has_crossed(self.vehicle.transform)
                 if crossed:
                     self.cross_reward+=crossed
+                    self.occupancy_map.del_bbox(self.bbox_list[self.int_counter])
                     currentframe_crossed.append(self.bbox_list[self.int_counter])
                     self.int_counter += 1
                 else:
