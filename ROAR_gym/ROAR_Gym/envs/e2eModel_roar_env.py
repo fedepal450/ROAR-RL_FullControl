@@ -239,16 +239,17 @@ class ROARppoEnvE2E(ROAREnv):
             # x_dis,y_dis,xy_dis=line_location[:3]/40
             # l_yaw,vtol_yaw=line_location[3:]
             # data=np.array([v_speed,v_height,v_roll,v_pitch,v_yaw,v_throttle,v_steering,v_braking,x_dis,y_dis,xy_dis,l_yaw,vtol_yaw])
-
+            l=len(self.agent.bbox_list)
             map_list = self.agent.occupancy_map.get_map_baseline(transform_list=self.agent.vt_queue,
                                                     view_size=(CONFIG["x_res"], CONFIG["y_res"]),
-                                                    bbox_list=self.agent.frame_queue
+                                                    bbox_list=self.agent.frame_queue,
+                                                                 next_bbox_list=self.agent.bbox_list[self.agent.int_counter-l:self.agent.int_counter+4-l]
                                                     )
             # data = cv2.resize(occu_map, (CONFIG["x_res"], CONFIG["y_res"]), interpolation=cv2.INTER_AREA)
             #cv2.imshow("Occupancy Grid Map", cv2.resize(np.float32(data), dsize=(500, 500)))
 
             # data_view=np.sum(data,axis=2)
-            cv2.imshow("data", map_list[0]) # uncomment to show occu map
+            cv2.imshow("data", map_list[-1]) # uncomment to show occu map
             cv2.waitKey(1)
             # yaw_angle=self.agent.vehicle.transform.rotation.yaw
             # velocity=self.agent.vehicle.get_speed(self.agent.vehicle)

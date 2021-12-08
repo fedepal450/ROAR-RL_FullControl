@@ -301,22 +301,23 @@ class OccupancyGridMap(Module):
 
     def draw_bbox_list(self,bbox_list=None):
         for bbox in bbox_list:
-            coord=[self.location_to_occu_cord(location=location)[0] for location in bbox.get_visualize_locs]
+            coord=[self.location_to_occu_cord(location=location)[0] for location in bbox.get_visualize_locs()]
             coord=np.array(coord).swapaxes(0,1)
             coord[[0,1]]=coord[[1,0]]
-            self._map[tuple(coord)] += bbox.get_value
+            self._map[tuple(coord)] += bbox.get_value()
 
     def del_bbox(self,bbox):
-        coord=[self.location_to_occu_cord(location=location)[0] for location in bbox.get_visualize_locs]
+        coord=[self.location_to_occu_cord(location=location)[0] for location in bbox.get_visualize_locs()]
         coord=np.array(coord).swapaxes(0,1)
         coord[[0,1]]=coord[[1,0]]
-        self._map[tuple(coord)] -= bbox.get_value
+        self._map[tuple(coord)] -= bbox.get_value()
 
     def get_map_baseline(self,
                 transform_list,
                 view_size = (100, 100),
                 boundary_size = (100, 100),
-                         bbox_list=None) -> np.ndarray:
+                         bbox_list=None,
+                         next_bbox_list=None) -> np.ndarray:
         """
         Return global occu map if transform is None
         Otherwise, return ego centric map
@@ -334,6 +335,13 @@ class OccupancyGridMap(Module):
         """
         num_frames=len(transform_list)
         map_to_view = np.float32(self._map)
+
+        for bbox in next_bbox_list:
+            coord=[self.location_to_occu_cord(location=location)[0] for location in bbox.get_visualize_locs()]
+            coord=np.array(coord).swapaxes(0,1)
+            coord[[0,1]]=coord[[1,0]]
+            map_to_view[tuple(coord)] += bbox.get_value()
+
         yaw=-transform_list[-1].rotation.yaw
         occu_cord = self.location_to_occu_cord(location=transform_list[-1].location)
         x, y = occu_cord[0]
