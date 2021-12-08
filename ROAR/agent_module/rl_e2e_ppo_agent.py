@@ -15,6 +15,7 @@ from ROAR.utilities_module.data_structures_models import Transform, Location
 import cv2
 from typing import Optional
 import scipy.stats
+from collections import deque
 
 class RLe2ePPOAgent(Agent):
     def __init__(self, vehicle: Vehicle, agent_settings: AgentConfig, **kwargs):
@@ -55,8 +56,11 @@ class RLe2ePPOAgent(Agent):
         self.finished = False
         self.curr_dist_to_strip = 0
         self.bbox: Optional[LineBBox] = None
-        # self.bbox_list = []# list of bbox
-        self._get_next_bbox()
+        self.bbox_list = []# list of bbox
+        self.frame_queue = deque([None, None, None], maxlen=4)
+        self.vt_queue = deque([None, None, None], maxlen=4)
+        #self._get_next_bbox()
+        self._get_all_bbox()
 
     def reset(self,vehicle: Vehicle):
         self.vehicle=vehicle
@@ -67,7 +71,10 @@ class RLe2ePPOAgent(Agent):
         self.curr_dist_to_strip = 0
         self.bbox: Optional[LineBBox] = None
         # self.bbox_list = []# list of bbox
-        self._get_next_bbox()
+        #self.bbox_list = []# list of bbox
+        self.frame_queue = deque([None, None, None], maxlen=4)
+        self.vt_queue = deque([None, None, None], maxlen=4)
+        #self._get_next_bbox()
 
     def run_step(self,vehicle: Vehicle) -> VehicleControl:
         # super(RLe2ePPOAgent, self).run_step(sensors_data, vehicle)
@@ -85,7 +92,6 @@ class RLe2ePPOAgent(Agent):
         return:
         crossed: a boolean value indicating whether a new strip is reached
         dist (optional): distance to the strip, value no specific meaning
-        """
         self.counter += 1
         if not self.finished:
             while(True):
@@ -99,6 +105,60 @@ class RLe2ePPOAgent(Agent):
 
             return dist
         return False, 0.0
+        """
+        #import pdb; pdb.set_trace()
+        if self.int_counter < len(self.bbox_list):
+            currentframe_crossed = []
+            while(True):
+                crossed, dist = self.bbox_list[self.int_counter].has_crossed(self.vehicle.transform)
+                if crossed:
+                    self.cross_reward+=crossed
+                    currentframe_crossed.append(self.bbox_list[self.int_counter])
+                    self.int_counter += 1
+                else:
+                    break
+            if len(self.frame_queue) < 4 and len(currentframe_crossed):
+                self.frame_queue.append(currentframe_crossed)
+            elif len(currentframe_crossed):
+                self.frame_queue.popleft()
+                self.frame_queue.append(currentframe_crossed)
+            else:
+                self.frame_queue.append(None)
+            # add vehicle tranform
+            if len(self.vt_queue) < 4:
+                self.vt_queue.append(self.vehicle.transform)
+            else:
+                self.vt_queue.popleft()
+                self.vt_queue.append(self.vehicle.transform)
+            return dist
+        return False, 0.0
+
+    def _get_all_bbox(self):
+        local_int_counter = 0
+        curr_lb = self.look_back
+        curr_idx = local_int_counter * self.interval
+        while curr_idx + curr_lb < len(self.plan_lst):
+            if curr_lb > self.look_back_max:
+                local_int_counter += 1
+                curr_lb = self.look_back
+                curr_idx = local_int_counter * self.interval
+                continue
+
+            t1 = self.plan_lst[curr_idx]
+            t2 = self.plan_lst[curr_idx + curr_lb]
+
+            dx = t2.location.x - t1.location.x
+            dz = t2.location.z - t1.location.z
+            if abs(dx) < self.thres and abs(dz) < self.thres:
+                curr_lb += 1
+            else:
+                self.bbox_list.append(LineBBox(t1, t2, self.bbox_reward_list))
+                local_int_counter += 1
+                curr_lb = self.look_back
+                curr_idx = local_int_counter * self.interval
+        # no next bbox
+        print("finished all the iterations!")
+        #self.finished = True
 
     def _get_next_bbox(self):
         # make sure no index out of bound error
@@ -124,38 +184,6 @@ class RLe2ePPOAgent(Agent):
         # no next bbox
         print("finished all the iterations!")
         self.finished = True
-
-    # def _get_bbox_list(self, num):
-    #     # make sure no index out of bound error
-    #     self.bbox_list = []#clear bbox_list
-    #     curr_lb = self.look_back
-    #     curr_idx = self.int_counter * self.interval
-    #     while curr_idx + curr_lb < len(self.plan_lst):
-    #         if curr_lb > self.look_back_max:
-    #             self.int_counter += 1
-    #             curr_lb = self.look_back
-    #             curr_idx = self.int_counter * self.interval
-    #             continue
-    #
-    #         t1 = self.plan_lst[curr_idx]
-    #         t2 = self.plan_lst[curr_idx + curr_lb]
-    #
-    #         dx = t2.location.x - t1.location.x
-    #         dz = t2.location.z - t1.location.z
-    #         if abs(dx) < self.thres and abs(dz) < self.thres:
-    #             curr_lb += 1
-    #         else:
-    #             if num > 0:
-    #                 num -= 1
-    #                 self.bbox_list.append(LineBBox(t1, t2))
-    #                 curr_lb = self.look_back #update curr_lb
-    #                 curr_idx = self.int_counter * self.interval
-    #             else:
-    #                 return
-    #
-    #     # no next bbox
-    #     print("finished all the iterations!")
-    #     self.finished = True
 
 
 class LineBBox(object):

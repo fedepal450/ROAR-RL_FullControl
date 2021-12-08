@@ -139,7 +139,7 @@ class ROARppoEnvE2E(ROAREnv):
         if self.crash_check:
             return 0
         # reward computation
-        current_speed = self.agent.bbox.get_directional_velocity(self.agent.vehicle.velocity.x,self.agent.vehicle.velocity.y)
+        current_speed = self.agent.bbox_list[self.agent.int_counter].get_directional_velocity(self.agent.vehicle.velocity.x,self.agent.vehicle.velocity.y)
         self.speeds.append(current_speed)
 
         if self.agent.cross_reward > self.prev_cross_reward:
@@ -190,7 +190,7 @@ class ROARppoEnvE2E(ROAREnv):
             return data
         elif mode=='combine':
             vehicle_state=self.agent.vehicle.to_array() #12
-            line_location=self.agent.bbox.to_array(vehicle_state[3],vehicle_state[5]) #4
+            line_location=self.agent.bbox_list[self.agent.int_counter].to_array(vehicle_state[3],vehicle_state[5]) #4
             v_speed=np.sqrt(np.square(vehicle_state[0])+np.square(vehicle_state[1]))/150
             v_height=vehicle_state[4]/100
             v_roll,v_pitch,v_yaw=vehicle_state[[6,7,8]]/180
@@ -201,8 +201,8 @@ class ROARppoEnvE2E(ROAREnv):
 
             map = self.agent.occupancy_map.get_map(transform=self.agent.vehicle.transform,
                                                     view_size=(CONFIG["x_res"], CONFIG["y_res"]),
-                                                    arbitrary_locations=self.agent.bbox.get_visualize_locs(),
-                                                    arbitrary_point_value=self.agent.bbox.get_value(),
+                                                    arbitrary_locations=self.agent.bbox_list[self.agent.int_counter].get_visualize_locs(),
+                                                    arbitrary_point_value=self.agent.bbox_list[self.agent.int_counter].get_value(),
                                                     vehicle_velocity=self.agent.vehicle.velocity,
                                                     # rotate=self.agent.bbox.get_yaw()
                                                     )
