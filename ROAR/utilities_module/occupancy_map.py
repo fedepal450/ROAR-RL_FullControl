@@ -298,6 +298,62 @@ class OccupancyGridMap(Module):
 
             # map_to_view=np.stack((map_to_view,waypoint_view,vehicle_view),2)
             return map_to_view
+    def get_map_baseline(self,
+                transform_list,
+                view_size = (100, 100),
+                boundary_size = (100, 100),
+                         bbox_list=None) -> np.ndarray:
+        """
+        Return global occu map if transform is None
+        Otherwise, return ego centric map
+
+        Args:
+            arbitrary_point_value:
+            arbitrary_locations:
+            vehicle_value:
+            boundary_size:
+            transform: Current vehicle Transform
+            view_size: Size of the view window
+
+        Returns:
+            np.ndarray of float32
+        """
+        num_frames=len(transform_list)
+        map_to_view = np.float32(self._map)
+        yaw=-transform_list[-1].rotation.yaw
+        occu_cord = self.location_to_occu_cord(location=transform_list[-1].location)
+        x, y = occu_cord[0]
+        first_cut_size = (view_size[0] + boundary_size[0], view_size[1] + boundary_size[1])
+        map_to_view = map_to_view[y - first_cut_size[1] // 2: y + first_cut_size[1] // 2,
+                  x - first_cut_size[0] // 2: x + first_cut_size[0] // 2]
+
+
+        map_to_view=[map_to_view.copy() for _ in range(num_frames)]
+        for i in range(num_frames):
+            vehicle_x,vehicle_y=self.location_to_occu_cord(location=transform_list[i].location)[0]
+            vehicle_x+=(first_cut_size[0] // 2)-x
+            vehicle_y+=(first_cut_size[1] // 2)-y
+            map_to_view[i][vehicle_y-3:vehicle_y+3, vehicle_x-3:vehicle_x+3] += 0.8
+            for j in range(i+1,num_frames):
+                if bbox_list[j] is not None:
+                    for bbox in bbox_list[j]:
+                        coord=[self.location_to_occu_cord(location=location)[0] for location in bbox.get_visualize_locs()]
+                        coord=np.array(coord)
+                        coord+=[(first_cut_size[0] // 2)-x,(first_cut_size[1] // 2)-y]
+                        coord=coord.swapaxes(0,1)
+                        coord[[0,1]]=coord[[1,0]]
+                        map_to_view[i][tuple(coord)]+=bbox.get_value()
+
+
+            image = Image.fromarray(map_to_view[i])
+            image = image.rotate(yaw)
+            map_to_view[i] = np.asarray(image)
+            x_extra, y_extra = boundary_size[0] // 2, boundary_size[1] // 2
+            map_to_view[i] = map_to_view[i][y_extra: map_to_view[i].shape[1] - y_extra,
+                          x_extra: map_to_view[i].shape[0] - x_extra]
+
+        return np.array(map_to_view)
+
 
     def cropped_occu_to_world(self,
                               cropped_occu_coord: np.ndarray,

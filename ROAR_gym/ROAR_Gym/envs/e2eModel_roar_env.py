@@ -46,8 +46,12 @@ class ROARppoEnvE2E(ROAREnv):
         high=np.array([-1.0, 10.0, 12.0])
         # low=np.array([100, 0, -1])
         # high=np.array([1, 0.12, 0.5])
-        self.action_space = Box(low=np.tile(low,(FRAME_STACK)), high=np.tile(high,(FRAME_STACK)), dtype=np.float32)
         self.mode=mode
+        if self.mode=='baseline':
+            self.action_space = Box(low=low, high=high, dtype=np.float32)
+        else:
+            self.action_space = Box(low=np.tile(low,(FRAME_STACK)), high=np.tile(high,(FRAME_STACK)), dtype=np.float32)
+
         if self.mode=='no_map':
             self.observation_space = Box(low=np.tile([-1],(13)), high=np.tile([1],(13)), dtype=np.float32)
         elif self.mode=='combine':
@@ -73,7 +77,7 @@ class ROARppoEnvE2E(ROAREnv):
         rewards = []
         self.steps+=1
 
-        for i in range(FRAME_STACK):
+        for i in range(1):
             # throttle=np.min([np.power(action[i*3+0],0.1)*2,1])
             # steering=np.sign(action[i*3+1])*np.max([np.power(action[i*3+1],10)-0.5,0])
             # braking=np.max([np.square(action[i*3+2])-0.9,0])
@@ -226,40 +230,38 @@ class ROARppoEnvE2E(ROAREnv):
             return np.array([map_input,waypoint,data_input])
 
         elif mode=='baseline':
-            vehicle_state=self.agent.vehicle.to_array() #12
-            line_location=self.agent.bbox.to_array(vehicle_state[3],vehicle_state[5]) #4
-            v_speed=np.sqrt(np.square(vehicle_state[0])+np.square(vehicle_state[1]))/150
-            v_height=vehicle_state[4]/100
-            v_roll,v_pitch,v_yaw=vehicle_state[[6,7,8]]/180
-            v_throttle,v_steering,v_braking=vehicle_state[[9,10,11]]
-            x_dis,y_dis,xy_dis=line_location[:3]/40
-            l_yaw,vtol_yaw=line_location[3:]
-            data=np.array([v_speed,v_height,v_roll,v_pitch,v_yaw,v_throttle,v_steering,v_braking,x_dis,y_dis,xy_dis,l_yaw,vtol_yaw])
+            # vehicle_state=self.agent.vehicle.to_array() #12
+            # line_location=self.agent.bbox.to_array(vehicle_state[3],vehicle_state[5]) #4
+            # v_speed=np.sqrt(np.square(vehicle_state[0])+np.square(vehicle_state[1]))/150
+            # v_height=vehicle_state[4]/100
+            # v_roll,v_pitch,v_yaw=vehicle_state[[6,7,8]]/180
+            # v_throttle,v_steering,v_braking=vehicle_state[[9,10,11]]
+            # x_dis,y_dis,xy_dis=line_location[:3]/40
+            # l_yaw,vtol_yaw=line_location[3:]
+            # data=np.array([v_speed,v_height,v_roll,v_pitch,v_yaw,v_throttle,v_steering,v_braking,x_dis,y_dis,xy_dis,l_yaw,vtol_yaw])
 
-            map = self.agent.occupancy_map.get_map(transform=self.agent.vehicle.transform,
+            map_list = self.agent.occupancy_map.get_map_baseline(transform_list=self.agent.vt_queue,
                                                     view_size=(CONFIG["x_res"], CONFIG["y_res"]),
-                                                    arbitrary_locations=self.agent.bbox.get_visualize_locs(),
-                                                    arbitrary_point_value=self.agent.bbox.get_value(),
-                                                    vehicle_velocity=self.agent.vehicle.velocity,
-                                                    # rotate=self.agent.bbox.get_yaw()
+                                                    bbox_list=self.agent.frame_queue
                                                     )
             # data = cv2.resize(occu_map, (CONFIG["x_res"], CONFIG["y_res"]), interpolation=cv2.INTER_AREA)
             #cv2.imshow("Occupancy Grid Map", cv2.resize(np.float32(data), dsize=(500, 500)))
 
             # data_view=np.sum(data,axis=2)
-            cv2.imshow("data", map) # uncomment to show occu map
+            cv2.imshow("data", map_list[0]) # uncomment to show occu map
             cv2.waitKey(1)
             # yaw_angle=self.agent.vehicle.transform.rotation.yaw
             # velocity=self.agent.vehicle.get_speed(self.agent.vehicle)
             # data[0,0,2]=velocity
-            map_input=map.copy()
+            map_input=map_list.copy()
             map_input[map_input!=1]=0
-            map_input*=10
-            waypoint=map.copy()
+            map_input*=255
+            waypoint=map_list.copy()
             waypoint[waypoint==1]=0
-            data_input=np.zeros_like(map)
-            data_input[0,:13]=data
-            return np.array([map_input,waypoint])
+            waypoint*=255
+            # data_input=np.zeros_like(map_list)
+            # data_input[0,:13]=data
+            return np.stack([np.array(z) for z in zip(map_input,waypoint)])
 
         else:
             data = self.agent.occupancy_map.get_map(transform=self.agent.vehicle.transform,

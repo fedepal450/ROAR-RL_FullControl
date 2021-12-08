@@ -61,6 +61,8 @@ class RLe2ePPOAgent(Agent):
         self.vt_queue = deque([None, None, None], maxlen=4)
         #self._get_next_bbox()
         self._get_all_bbox()
+        for _ in range(4):
+            self.bbox_step()
 
     def reset(self,vehicle: Vehicle):
         self.vehicle=vehicle
@@ -74,6 +76,8 @@ class RLe2ePPOAgent(Agent):
         #self.bbox_list = []# list of bbox
         self.frame_queue = deque([None, None, None], maxlen=4)
         self.vt_queue = deque([None, None, None], maxlen=4)
+        for _ in range(4):
+            self.bbox_step()
         #self._get_next_bbox()
 
     def run_step(self,vehicle: Vehicle) -> VehicleControl:
