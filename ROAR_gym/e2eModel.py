@@ -68,7 +68,7 @@ def main(pass_num):
             features_extractor_kwargs=dict(features_dim=256)
         )
 
-    run_fps=20
+    run_fps=50
 
     training_kwargs = dict(
         learning_rate=0.001,
