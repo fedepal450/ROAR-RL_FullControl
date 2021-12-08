@@ -105,15 +105,22 @@ class EncoderCNNtrain18(nn.Module):
         with th.no_grad():
             w = resnet.conv1.weight[:64,:2]
 
-        modules = list(resnet.children())[:-2]
+        modules = list(resnet.children())[:-1]
         modules[0] = th.nn.Conv2d(2, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
         modules[0].weight = nn.Parameter(w)
+        #modules[-1] = th.flatten(, 1)
+
+
         self.resnet = nn.Sequential(*modules)
+
+        self.lastResNet = list(resnet.children())[-1]
 
     def forward(self, images):
         features = self.resnet(images)  # (batch_size,512,8,8)
-        features = features.permute(0, 2, 3, 1)  # (batch_size,8,8,512)
-        features = features.view(features.size(0), -1, features.size(-1))  # (batch_size,49,512)
+        features = th.flatten(features, 1)
+        features = self.lastResNet(features)
+        # features = features.permute(0, 2, 3, 1)  # (batch_size,8,8,512)
+        # features = features.view(features.size(0), -1, features.size(-1))  # (batch_size,49,512)
         # print(features.shape)
         return features
 
@@ -129,15 +136,15 @@ class EncoderDecodertrain18(nn.Module):
             decoder_dim=decoder_dim,
             out_dim=out_dim
         )
-        self.just_LSTM = th.nn.LSTM(input_size=25088,num_layers=3, hidden_size=256, batch_first=True)
+        self.just_LSTM = th.nn.LSTM(input_size=1000,num_layers=2, hidden_size=256, batch_first=True)
         self.flat = nn.Sequential(
             th.nn.Flatten(start_dim=1, end_dim=-1),
-            #th.nn.Linear(25088, 512)
+            th.nn.Linear(25088, 512)
         )
 
     def forward(self, images):
         features = self.encoder(images) #features becomes 4,49,512
-        features = self.flat(features)
+        # features = self.flat(features)
         features = th.reshape(features,(4,1,features.shape[1]))
 
         outputs = self.just_LSTM(features)

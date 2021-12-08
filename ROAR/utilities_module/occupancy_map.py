@@ -239,10 +239,10 @@ class OccupancyGridMap(Module):
             # waypoint_view=np.zeros_like(map_to_view)
             # vehicle_view=np.zeros_like(map_to_view)
             map_to_view[y-3:y+3, x-3:x+3] += 0.8
-            if vehicle_velocity:
-                y_shadow=y+int(vehicle_velocity.y/2)
-                x_shadow=x+int(vehicle_velocity.x/2)
-                map_to_view[y_shadow-3:y_shadow+3, x_shadow-3:x_shadow+3]+=0.7
+            # if vehicle_velocity:
+            #     y_shadow=y+int(vehicle_velocity.y/2)
+            #     x_shadow=x+int(vehicle_velocity.x/2)
+            #     map_to_view[y_shadow-3:y_shadow+3, x_shadow-3:x_shadow+3]+=0.7
 
             if arbitrary_point_value is not None and arbitrary_locations is not None:
                 coord=[self.location_to_occu_cord(location=location)[0] for location in arbitrary_locations]

@@ -81,9 +81,9 @@ class ROARppoEnvE2E(ROAREnv):
             # throttle=np.min([np.power(action[i*3+0],0.1)*2,1])
             # steering=np.sign(action[i*3+1])*np.max([np.power(action[i*3+1],10)-0.5,0])
             # braking=np.max([np.square(action[i*3+2])-0.9,0])
-            throttle=(action[i*3+0]+1)/5+1
+            throttle=.8#(action[i*3+0]+1)/5+1
             steering=action[i*3+1]/10
-            braking=(action[i*3+2]-2)/10
+            braking=0#(action[i*3+2]-2)/10
             # throttle=min(max(action[i*3+0],0),1)
             # steering=min(max(action[i*3+1],-1),1)
             # braking=min(max(action[i*3+2],0),1)
