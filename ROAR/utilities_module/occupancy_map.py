@@ -298,6 +298,20 @@ class OccupancyGridMap(Module):
 
             # map_to_view=np.stack((map_to_view,waypoint_view,vehicle_view),2)
             return map_to_view
+
+    def draw_bbox_list(self,bbox_list=None):
+        for bbox in bbox_list:
+            coord=[self.location_to_occu_cord(location=location)[0] for location in bbox.get_visualize_locs]
+            coord=np.array(coord).swapaxes(0,1)
+            coord[[0,1]]=coord[[1,0]]
+            self._map[tuple(coord)] += bbox.get_value
+
+    def del_bbox(self,bbox):
+        coord=[self.location_to_occu_cord(location=location)[0] for location in bbox.get_visualize_locs]
+        coord=np.array(coord).swapaxes(0,1)
+        coord[[0,1]]=coord[[1,0]]
+        self._map[tuple(coord)] -= bbox.get_value
+
     def get_map_baseline(self,
                 transform_list,
                 view_size = (100, 100),
