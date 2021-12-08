@@ -137,7 +137,7 @@ class ROARppoEnvE2E(ROAREnv):
 
     def get_reward(self) -> float:
         # prep for reward computation
-        reward = -10*(1-self.agent.vehicle.control.throttle+100*self.agent.vehicle.control.braking+abs(self.agent.vehicle.control.steering))/50
+        reward = -1*(1-self.agent.vehicle.control.throttle+100*self.agent.vehicle.control.braking+abs(self.agent.vehicle.control.steering))/25
         curr_dist_to_strip = self.agent.curr_dist_to_strip
 
         if self.crash_check:
@@ -243,7 +243,7 @@ class ROARppoEnvE2E(ROAREnv):
             map_list = self.agent.occupancy_map.get_map_baseline(transform_list=self.agent.vt_queue,
                                                     view_size=(CONFIG["x_res"], CONFIG["y_res"]),
                                                     bbox_list=self.agent.frame_queue,
-                                                                 next_bbox_list=self.agent.bbox_list[self.agent.int_counter-l:self.agent.int_counter+4-l]
+                                                                 next_bbox_list=self.agent.bbox_list[self.agent.int_counter-l:self.agent.int_counter+10-l]
                                                     )
             # data = cv2.resize(occu_map, (CONFIG["x_res"], CONFIG["y_res"]), interpolation=cv2.INTER_AREA)
             #cv2.imshow("Occupancy Grid Map", cv2.resize(np.float32(data), dsize=(500, 500)))
@@ -256,10 +256,10 @@ class ROARppoEnvE2E(ROAREnv):
             # data[0,0,2]=velocity
             map_input=map_list.copy()
             map_input[map_input!=1]=0
-            map_input*=255
+            # map_input*=255
             waypoint=map_list.copy()
             waypoint[waypoint==1]=0
-            waypoint*=255
+            # waypoint*=255
             # data_input=np.zeros_like(map_list)
             # data_input[0,:13]=data
             return np.stack([np.array(z) for z in zip(map_input,waypoint)])

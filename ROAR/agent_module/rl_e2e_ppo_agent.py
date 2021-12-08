@@ -42,7 +42,7 @@ class RLe2ePPOAgent(Agent):
         self.plan_lst = list(self.mission_planner.produce_single_lap_mission_plan())
 
         self.kwargs = kwargs
-        self.interval = self.kwargs.get('interval', 50)
+        self.interval = self.kwargs.get('interval', 15)
         self.look_back = self.kwargs.get('look_back', 5)
         self.look_back_max = self.kwargs.get('look_back_max', 10)
         self.thres = self.kwargs.get('thres', 1e-3)

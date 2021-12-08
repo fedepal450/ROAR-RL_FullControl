@@ -16,7 +16,7 @@ from ROAR.configurations.configuration import Configuration as AgentConfig
 from ROAR.agent_module.agent import Agent
 from ROAR.agent_module.rl_e2e_ppo_agent import RLe2ePPOAgent##
 from ROAR.agent_module.forward_only_agent import ForwardOnlyAgent   ##testing stuff
-
+import torch as th
 from stable_baselines3.ppo.ppo import PPO
 from stable_baselines3.ppo.policies import CnnPolicy
 
@@ -45,7 +45,6 @@ def main(pass_num):
     model_dir_path = Path("./output/PPOe2e")
 
     env = gym.make('roar-e2e-ppo-v0', params=params)
-    env.reset()
 
     if env.mode=='no_map':
         policy_kwargs = dict(
@@ -68,19 +67,19 @@ def main(pass_num):
             features_extractor_kwargs=dict(features_dim=256)
         )
 
-    run_fps=50
+    run_fps=25
 
     training_kwargs = dict(
         learning_rate=0.001,
         batch_size=64,
         gamma=0.95,
         seed=1,
-        device="cuda",
+        device=th.device('cuda:0' if th.cuda.is_available() else 'cpu'),
         verbose=1,
         tensorboard_log=(Path(model_dir_path) / "tensorboard").as_posix(),
         # use_sde=True,
-        # sde_sample_freq=3,
-        n_steps=30*run_fps
+        # sde_sample_freq=5,
+        n_steps=600*run_fps
     )
 
 
@@ -91,10 +90,10 @@ def main(pass_num):
         model = PPO.load(latest_model_path, env=env, policy_kwargs=policy_kwargs, **training_kwargs)
     print("Model Loaded Successfully")
     logging_callback = LoggingCallback(model=model)
-    checkpoint_callback = CheckpointCallback(save_freq=200*run_fps, verbose=2, save_path=(model_dir_path/"logs").as_posix())
-    event_callback = EveryNTimesteps(n_steps=200*run_fps, callback=checkpoint_callback)
+    checkpoint_callback = CheckpointCallback(save_freq=600*run_fps, verbose=2, save_path=(model_dir_path/"logs").as_posix())
+    event_callback = EveryNTimesteps(n_steps=600*run_fps, callback=checkpoint_callback)
     callbacks = CallbackList([checkpoint_callback, event_callback, logging_callback])
-    model = model.learn(total_timesteps=int(1e6),log_interval=1000,eval_freq=200*run_fps, callback=callbacks, reset_num_timesteps=False)
+    model = model.learn(total_timesteps=int(1e8),eval_freq=600*run_fps, callback=callbacks, reset_num_timesteps=False)
     model.save(model_dir_path / f"roar_e2e_model_{pass_num}")
     print("Successful Save!")
 
