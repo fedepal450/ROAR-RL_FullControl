@@ -230,38 +230,25 @@ class ROARppoEnvE2E(ROAREnv):
             return np.array([map_input,waypoint,data_input])
 
         elif mode=='baseline':
-            # vehicle_state=self.agent.vehicle.to_array() #12
-            # line_location=self.agent.bbox.to_array(vehicle_state[3],vehicle_state[5]) #4
-            # v_speed=np.sqrt(np.square(vehicle_state[0])+np.square(vehicle_state[1]))/150
-            # v_height=vehicle_state[4]/100
-            # v_roll,v_pitch,v_yaw=vehicle_state[[6,7,8]]/180
-            # v_throttle,v_steering,v_braking=vehicle_state[[9,10,11]]
-            # x_dis,y_dis,xy_dis=line_location[:3]/40
-            # l_yaw,vtol_yaw=line_location[3:]
-            # data=np.array([v_speed,v_height,v_roll,v_pitch,v_yaw,v_throttle,v_steering,v_braking,x_dis,y_dis,xy_dis,l_yaw,vtol_yaw])
             l=len(self.agent.bbox_list)
             map_list = self.agent.occupancy_map.get_map_baseline(transform_list=self.agent.vt_queue,
                                                     view_size=(CONFIG["x_res"], CONFIG["y_res"]),
                                                     bbox_list=self.agent.frame_queue,
                                                                  next_bbox_list=self.agent.bbox_list[self.agent.int_counter-l:self.agent.int_counter+10-l]
                                                     )
-            # data = cv2.resize(occu_map, (CONFIG["x_res"], CONFIG["y_res"]), interpolation=cv2.INTER_AREA)
-            #cv2.imshow("Occupancy Grid Map", cv2.resize(np.float32(data), dsize=(500, 500)))
+
 
             # data_view=np.sum(data,axis=2)
             cv2.imshow("data", map_list[-1]) # uncomment to show occu map
             cv2.waitKey(1)
-            # yaw_angle=self.agent.vehicle.transform.rotation.yaw
-            # velocity=self.agent.vehicle.get_speed(self.agent.vehicle)
-            # data[0,0,2]=velocity
+
             map_input=map_list.copy()
             map_input[map_input!=1]=0
-            # map_input*=255
+
             waypoint=map_list.copy()
             waypoint[waypoint==1]=0
-            # waypoint*=255
-            # data_input=np.zeros_like(map_list)
-            # data_input[0,:13]=data
+            waypoint[waypoint > 1] = waypoint[waypoint > 1] -1
+
             return np.stack([np.array(z) for z in zip(map_input,waypoint)])
 
         else:
