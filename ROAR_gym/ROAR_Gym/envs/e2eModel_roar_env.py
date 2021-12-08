@@ -137,7 +137,7 @@ class ROARppoEnvE2E(ROAREnv):
 
     def get_reward(self) -> float:
         # prep for reward computation
-        reward = -20*(1-self.agent.vehicle.control.throttle+100*self.agent.vehicle.control.braking+abs(self.agent.vehicle.control.steering))/50
+        reward = -10*(1-self.agent.vehicle.control.throttle+100*self.agent.vehicle.control.braking+abs(self.agent.vehicle.control.steering))/50
         curr_dist_to_strip = self.agent.curr_dist_to_strip
 
         if self.crash_check:
