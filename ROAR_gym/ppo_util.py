@@ -136,7 +136,7 @@ class EncoderDecodertrain18(nn.Module):
             decoder_dim=decoder_dim,
             out_dim=out_dim
         )
-        self.just_LSTM = th.nn.LSTM(input_size=1000,num_layers=2, hidden_size=256, batch_first=True)
+        self.just_LSTM = th.nn.LSTM(input_size=1000,num_layers=1, hidden_size=256, batch_first=True)
         self.flat = nn.Sequential(
             th.nn.Flatten(start_dim=1, end_dim=-1),
             th.nn.Linear(25088, 512)
