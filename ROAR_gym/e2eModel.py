@@ -16,7 +16,7 @@ from ROAR.configurations.configuration import Configuration as AgentConfig
 from ROAR.agent_module.agent import Agent
 from ROAR.agent_module.rl_e2e_ppo_agent import RLe2ePPOAgent##
 from ROAR.agent_module.forward_only_agent import ForwardOnlyAgent   ##testing stuff
-
+import torch as th
 from stable_baselines3.ppo.ppo import PPO
 from stable_baselines3.ppo.policies import CnnPolicy
 
@@ -74,7 +74,7 @@ def main(pass_num):
         batch_size=64,
         gamma=0.95,
         seed=1,
-        device="cuda",
+        device=th.device('cuda:0' if th.cuda.is_available() else 'cpu'),
         verbose=1,
         tensorboard_log=(Path(model_dir_path) / "tensorboard").as_posix(),
         # use_sde=True,
@@ -93,7 +93,7 @@ def main(pass_num):
     checkpoint_callback = CheckpointCallback(save_freq=200*run_fps, verbose=2, save_path=(model_dir_path/"logs").as_posix())
     event_callback = EveryNTimesteps(n_steps=200*run_fps, callback=checkpoint_callback)
     callbacks = CallbackList([checkpoint_callback, event_callback, logging_callback])
-    model = model.learn(total_timesteps=int(1e6),log_interval=1000,eval_freq=200*run_fps, callback=callbacks, reset_num_timesteps=False)
+    model = model.learn(total_timesteps=int(1e6),log_interval=1000, callback=callbacks, reset_num_timesteps=False)
     model.save(model_dir_path / f"roar_e2e_model_{pass_num}")
     print("Successful Save!")
 

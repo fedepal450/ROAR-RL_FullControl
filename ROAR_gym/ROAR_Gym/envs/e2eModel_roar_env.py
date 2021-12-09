@@ -42,8 +42,8 @@ class ROARppoEnvE2E(ROAREnv):
     def __init__(self, params):
         super().__init__(params)
         #self.action_space = Discrete(len(DISCRETE_ACTIONS))
-        low=np.array([-6.0, -7.0, 2.0])
-        high=np.array([-1.0, 7.0, 12.0])
+        low=np.array([-6.0, -10.0, 2.0])
+        high=np.array([-1.0, 10.0, 12.0])
         # low=np.array([100, 0, -1])
         # high=np.array([1, 0.12, 0.5])
         self.mode=mode
@@ -81,9 +81,9 @@ class ROARppoEnvE2E(ROAREnv):
             # throttle=np.min([np.power(action[i*3+0],0.1)*2,1])
             # steering=np.sign(action[i*3+1])*np.max([np.power(action[i*3+1],10)-0.5,0])
             # braking=np.max([np.square(action[i*3+2])-0.9,0])
-            throttle=(action[i*3+0]+1)/5+1
-            steering=action[i*3+1]/7
-            braking=(action[i*3+2]-2)/10
+            throttle=.8#(action[i*3+0]+1)/5+1
+            steering=action[i*3+1]/10
+            braking=0#(action[i*3+2]-2)/10
             # throttle=min(max(action[i*3+0],0),1)
             # steering=min(max(action[i*3+1],-1),1)
             # braking=min(max(action[i*3+2],0),1)
@@ -137,8 +137,7 @@ class ROARppoEnvE2E(ROAREnv):
 
     def get_reward(self) -> float:
         # prep for reward computation
-        # reward = -1*(1-self.agent.vehicle.control.throttle+100*self.agent.vehicle.control.braking+abs(self.agent.vehicle.control.steering))/50
-        reward = -0.1/50
+        reward = -0.1*(1-self.agent.vehicle.control.throttle+100*self.agent.vehicle.control.braking+abs(self.agent.vehicle.control.steering))/50
         curr_dist_to_strip = self.agent.curr_dist_to_strip
 
         if self.crash_check:
