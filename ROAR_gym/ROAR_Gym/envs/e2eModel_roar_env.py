@@ -42,8 +42,8 @@ class ROARppoEnvE2E(ROAREnv):
     def __init__(self, params):
         super().__init__(params)
         #self.action_space = Discrete(len(DISCRETE_ACTIONS))
-        low=np.array([-6.0, -10.0, 2.0])
-        high=np.array([-1.0, 10.0, 12.0])
+        low=np.array([-6.0, -7.0, 2.0])
+        high=np.array([-1.0, 7.0, 12.0])
         # low=np.array([100, 0, -1])
         # high=np.array([1, 0.12, 0.5])
         self.mode=mode
@@ -81,9 +81,9 @@ class ROARppoEnvE2E(ROAREnv):
             # throttle=np.min([np.power(action[i*3+0],0.1)*2,1])
             # steering=np.sign(action[i*3+1])*np.max([np.power(action[i*3+1],10)-0.5,0])
             # braking=np.max([np.square(action[i*3+2])-0.9,0])
-            throttle=.8#(action[i*3+0]+1)/5+1
-            steering=action[i*3+1]/10
-            braking=0#(action[i*3+2]-2)/10
+            throttle=(action[i*3+0]+1)/5+1
+            steering=action[i*3+1]/7
+            braking=(action[i*3+2]-2)/10
             # throttle=min(max(action[i*3+0],0),1)
             # steering=min(max(action[i*3+1],-1),1)
             # braking=min(max(action[i*3+2],0),1)
@@ -137,7 +137,8 @@ class ROARppoEnvE2E(ROAREnv):
 
     def get_reward(self) -> float:
         # prep for reward computation
-        reward = -10*(1-self.agent.vehicle.control.throttle+100*self.agent.vehicle.control.braking+abs(self.agent.vehicle.control.steering))/50
+        # reward = -1*(1-self.agent.vehicle.control.throttle+100*self.agent.vehicle.control.braking+abs(self.agent.vehicle.control.steering))/50
+        reward = -0.1/50
         curr_dist_to_strip = self.agent.curr_dist_to_strip
 
         if self.crash_check:
@@ -243,22 +244,20 @@ class ROARppoEnvE2E(ROAREnv):
             map_list = self.agent.occupancy_map.get_map_baseline(transform_list=self.agent.vt_queue,
                                                     view_size=(CONFIG["x_res"], CONFIG["y_res"]),
                                                     bbox_list=self.agent.frame_queue,
-                                                                 next_bbox_list=self.agent.bbox_list[self.agent.int_counter-l:self.agent.int_counter+4-l]
+                                                                 next_bbox_list=self.agent.bbox_list[self.agent.int_counter-l:self.agent.int_counter+10-l]
                                                     )
             # data = cv2.resize(occu_map, (CONFIG["x_res"], CONFIG["y_res"]), interpolation=cv2.INTER_AREA)
             #cv2.imshow("Occupancy Grid Map", cv2.resize(np.float32(data), dsize=(500, 500)))
 
             # data_view=np.sum(data,axis=2)
-            cv2.imshow("data", map_list[-1]) # uncomment to show occu map
+            cv2.imshow("data", np.hstack(np.hstack(map_list))) # uncomment to show occu map
             cv2.waitKey(1)
             # yaw_angle=self.agent.vehicle.transform.rotation.yaw
             # velocity=self.agent.vehicle.get_speed(self.agent.vehicle)
             # data[0,0,2]=velocity
-            map_input=map_list.copy()
-            map_input[map_input!=1]=0
+            map_input=map_list[:,0]
             map_input*=255
-            waypoint=map_list.copy()
-            waypoint[waypoint==1]=0
+            waypoint=np.sum(map_list[:,1:3],axis=1)
             waypoint*=255
             # data_input=np.zeros_like(map_list)
             # data_input[0,:13]=data

@@ -45,7 +45,6 @@ def main(pass_num):
     model_dir_path = Path("./output/PPOe2e")
 
     env = gym.make('roar-e2e-ppo-v0', params=params)
-    env.reset()
 
     if env.mode=='no_map':
         policy_kwargs = dict(
@@ -71,7 +70,7 @@ def main(pass_num):
     run_fps=50
 
     training_kwargs = dict(
-        learning_rate=0.001,
+        learning_rate=0.0001,
         batch_size=64,
         gamma=0.95,
         seed=1,
@@ -79,8 +78,8 @@ def main(pass_num):
         verbose=1,
         tensorboard_log=(Path(model_dir_path) / "tensorboard").as_posix(),
         # use_sde=True,
-        # sde_sample_freq=3,
-        n_steps=30*run_fps
+        # sde_sample_freq=10,
+        n_steps=60*run_fps
     )
 
 
