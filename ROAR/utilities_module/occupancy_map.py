@@ -356,7 +356,7 @@ class OccupancyGridMap(Module):
             vehicle_x,vehicle_y=self.location_to_occu_cord(location=transform_list[i].location)[0]
             vehicle_x+=(first_cut_size[0] // 2)-x
             vehicle_y+=(first_cut_size[1] // 2)-y
-            v_map[vehicle_y-1:vehicle_y+2, vehicle_x-1:vehicle_x+2] = 0.8
+            v_map[vehicle_y-3:vehicle_y+4, vehicle_x-3:vehicle_x+4] = 0.8
 
             w_map=map_to_view.copy()
             w_map[w_map>=1]-=1
