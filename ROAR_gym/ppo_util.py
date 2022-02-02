@@ -6,6 +6,7 @@ import torch as th
 from torch import nn
 import torch.nn.functional as F
 import torchvision
+import numpy as np
 
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 
@@ -386,6 +387,39 @@ class CustomMaxPoolCNN_no_map(BaseFeaturesExtractor):
     def forward(self, observations: th.Tensor) -> th.Tensor:
         return self.linear(observations)
 
+def layer_init(layer, std=np.sqrt(2), bias_const=0.0):
+    th.nn.init.orthogonal_(layer.weight, std)
+    th.nn.init.constant_(layer.bias, bias_const)
+    return layer
+
+class Scale(nn.Module):
+    def __init__(self, scale):
+        super().__init__()
+        self.scale = scale
+
+    def forward(self, x):
+        return x * self.scale
+
+class Atari_PPO_Adapted_CNN(nn.Module):
+    """
+    Based on https://github.com/DarylRodrigo/rl_lib/blob/master/PPO/Models.py
+    """
+    def __init__(self, config):
+        super(Atari_PPO_Adapted_CNN, self).__init__()
+        channels = 3
+        self.network = nn.Sequential
+        (
+            Scale(1/255),
+            layer_init(nn.Conv2d(4, 32, 8, stride=4)),
+            nn.ReLU(),
+            layer_init(nn.Conv2d(32, 64, 4, stride=2)),
+            nn.ReLU(),
+            layer_init(nn.Conv2d(64, 64, 3, stride=1)),
+            nn.ReLU(),
+            nn.Flatten(),
+            layer_init(nn.Linear(3136, config.hidden_size)),
+            nn.ReLU()
+        )
 
 def find_latest_model(root_path: Path) -> Optional[Path]:
     import os
