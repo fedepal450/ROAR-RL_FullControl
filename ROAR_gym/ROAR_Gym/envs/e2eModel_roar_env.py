@@ -25,8 +25,8 @@ if mode=='combine' or mode=='baseline':
     CONFIG = {
         # max values are 280x280
         # original values are 80x80
-        "x_res": 224,
-        "y_res": 224
+        "x_res": 84,
+        "y_res": 84
     }
 else:
     CONFIG = {
