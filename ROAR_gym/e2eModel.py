@@ -21,7 +21,7 @@ from stable_baselines3.ppo.ppo import PPO
 from stable_baselines3.ppo.policies import CnnPolicy
 
 from stable_baselines3.common.callbacks import CheckpointCallback, EveryNTimesteps, CallbackList
-from ppo_util import find_latest_model, CustomMaxPoolCNN,CustomMaxPoolCNN_no_map, CustomMaxPoolCNN_combine, CustomMaxPoolCNN_attention
+from ppo_util import find_latest_model, CustomMaxPoolCNN,CustomMaxPoolCNN_no_map, CustomMaxPoolCNN_combine, Atari_PPO_Adapted_CNN
 
 try:
     from ROAR_Gym.envs.roar_env import LoggingCallback
@@ -58,7 +58,7 @@ def main(pass_num):
         )
     elif env.mode=='baseline':
         policy_kwargs = dict(
-            features_extractor_class=CustomMaxPoolCNN_attention,
+            features_extractor_class=Atari_PPO_Adapted_CNN,
             features_extractor_kwargs=dict(features_dim=256)
         )
     else:
@@ -67,7 +67,7 @@ def main(pass_num):
             features_extractor_kwargs=dict(features_dim=256)
         )
 
-    run_fps=50
+    run_fps=8
 
     training_kwargs = dict(
         learning_rate=0.00001,

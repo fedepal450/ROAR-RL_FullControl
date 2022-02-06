@@ -57,7 +57,7 @@ class ROARppoEnvE2E(ROAREnv):
         elif self.mode=='combine':
             self.observation_space = Box(-10, 1, shape=(FRAME_STACK,3, CONFIG["x_res"], CONFIG["y_res"]), dtype=np.float32)
         elif self.mode=='baseline':
-            self.observation_space = Box(-10, 1, shape=(FRAME_STACK,2, CONFIG["x_res"], CONFIG["y_res"]), dtype=np.float32)
+            self.observation_space = Box(-10, 1, shape=(FRAME_STACK,3, CONFIG["x_res"], CONFIG["y_res"]), dtype=np.float32)
         else:
             self.observation_space = Box(-10, 1, shape=(FRAME_STACK, CONFIG["x_res"], CONFIG["y_res"]), dtype=np.float32)
         self.prev_speed = 0
@@ -144,6 +144,7 @@ class ROARppoEnvE2E(ROAREnv):
             return 0
         # reward computation
         current_speed = self.agent.bbox_list[self.agent.int_counter].get_directional_velocity(self.agent.vehicle.velocity.x,self.agent.vehicle.velocity.y)
+        # current_speed = self.agent.vehicle.get_speed()
         self.speeds.append(current_speed)
 
         if self.agent.cross_reward > self.prev_cross_reward:
@@ -254,13 +255,14 @@ class ROARppoEnvE2E(ROAREnv):
             # yaw_angle=self.agent.vehicle.transform.rotation.yaw
             # velocity=self.agent.vehicle.get_speed(self.agent.vehicle)
             # data[0,0,2]=velocity
-            map_input=map_list[:,0]
-            map_input*=255
-            waypoint=np.sum(map_list[:,1:3],axis=1)
-            waypoint*=255
+            # map_input=map_list[:,0]
+            # map_input*=255
+            # waypoint=np.sum(map_list[:,1:3],axis=1)
+            # waypoint*=255
             # data_input=np.zeros_like(map_list)
             # data_input[0,:13]=data
-            return np.stack([np.array(z) for z in zip(map_input,waypoint)])
+            print(map_list[:,:-1].shape)
+            return map_list[:,:-1]
 
         else:
             data = self.agent.occupancy_map.get_map(transform=self.agent.vehicle.transform,

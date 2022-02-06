@@ -19,16 +19,16 @@
   "role_name": "hero",
   "car_color": {
     "r": 255,
-    "g": 0,
-    "b": 0,
-    "a": 255
+    "g": 255,
+    "b": 255,
+    "a": 0
   },
   "gamma": 2.2,
   "save_semantic_segmentation": false,
   "print_keyboard_hint": false,
   "synchronous_mode": true,
   "no_rendering_mode": false,
-  "fixed_delta_seconds": 0.02,
+  "fixed_delta_seconds": 0.125,
   "should_spawn_npcs": false,
   "npc_config_file_path": "../ROAR_Sim/configurations/npc_config.json",
   "agent_config_path": "./configurations/agent_configuration.json"
