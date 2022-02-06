@@ -114,33 +114,33 @@ class RLe2ePPOAgent(Agent):
         return False, 0.0
         """
         #import pdb; pdb.set_trace()
-        if self.int_counter < len(self.bbox_list):
-            currentframe_crossed = []
-            while(True):
-                crossed, dist = self.bbox_list[self.int_counter].has_crossed(self.vehicle.transform)
-                if crossed:
-                    self.cross_reward+=crossed
-                    # self.occupancy_map.del_bbox(self.bbox_list[self.int_counter])
-                    currentframe_crossed.append(self.bbox_list[self.int_counter])
-                    self.int_counter += 1
-                else:
-                    break
-            if len(self.frame_queue) < 4 and len(currentframe_crossed):
-                self.frame_queue.append(currentframe_crossed)
-            elif len(currentframe_crossed):
-                self.frame_queue.popleft()
-                self.frame_queue.append(currentframe_crossed)
+        if self.int_counter >= len(self.bbox_list):
+            self.finish_loop=True
+        currentframe_crossed = []
+
+        while(True):
+            crossed, dist = self.bbox_list[self.int_counter%len(self.bbox_list)].has_crossed(self.vehicle.transform)
+            if crossed:
+                self.cross_reward+=crossed
+                # self.occupancy_map.del_bbox(self.bbox_list[self.int_counter])
+                currentframe_crossed.append(self.bbox_list[self.int_counter%len(self.bbox_list)])
+                self.int_counter += 1
             else:
-                self.frame_queue.append(None)
-            # add vehicle tranform
-            if len(self.vt_queue) < 4:
-                self.vt_queue.append(self.vehicle.transform)
-            else:
-                self.vt_queue.popleft()
-                self.vt_queue.append(self.vehicle.transform)
-            return dist
-        self.finish_loop=True
-        return 0.0
+                break
+        if len(self.frame_queue) < 4 and len(currentframe_crossed):
+            self.frame_queue.append(currentframe_crossed)
+        elif len(currentframe_crossed):
+            self.frame_queue.popleft()
+            self.frame_queue.append(currentframe_crossed)
+        else:
+            self.frame_queue.append(None)
+        # add vehicle tranform
+        if len(self.vt_queue) < 4:
+            self.vt_queue.append(self.vehicle.transform)
+        else:
+            self.vt_queue.popleft()
+            self.vt_queue.append(self.vehicle.transform)
+        return dist
 
     def _get_all_bbox(self):
         local_int_counter = 0
@@ -172,12 +172,12 @@ class RLe2ePPOAgent(Agent):
     def _get_next_bbox(self):
         # make sure no index out of bound error
         curr_lb = self.look_back
-        curr_idx = self.int_counter * self.interval
+        curr_idx = (self.int_counter%len(self.bbox_list)) * self.interval
         while curr_idx + curr_lb < len(self.plan_lst):
             if curr_lb > self.look_back_max:
                 self.int_counter += 1
                 curr_lb = self.look_back
-                curr_idx = self.int_counter * self.interval
+                curr_idx = (self.int_counter%len(self.bbox_list)) * self.interval
                 continue
 
             t1 = self.plan_lst[curr_idx]

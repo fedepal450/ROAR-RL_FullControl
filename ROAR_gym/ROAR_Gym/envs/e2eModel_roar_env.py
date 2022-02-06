@@ -195,7 +195,7 @@ class ROARppoEnvE2E(ROAREnv):
             return data
         elif mode=='combine':
             vehicle_state=self.agent.vehicle.to_array() #12
-            line_location=self.agent.bbox_list[self.agent.int_counter].to_array(vehicle_state[3],vehicle_state[5]) #4
+            line_location=self.agent.bbox_list[self.agent.int_counter%len(self.agent.bbox_list)].to_array(vehicle_state[3],vehicle_state[5]) #4
             v_speed=np.sqrt(np.square(vehicle_state[0])+np.square(vehicle_state[1]))/150
             v_height=vehicle_state[4]/100
             v_roll,v_pitch,v_yaw=vehicle_state[[6,7,8]]/180
@@ -206,8 +206,8 @@ class ROARppoEnvE2E(ROAREnv):
 
             map = self.agent.occupancy_map.get_map(transform=self.agent.vehicle.transform,
                                                     view_size=(CONFIG["x_res"], CONFIG["y_res"]),
-                                                    arbitrary_locations=self.agent.bbox_list[self.agent.int_counter].get_visualize_locs(),
-                                                    arbitrary_point_value=self.agent.bbox_list[self.agent.int_counter].get_value(),
+                                                    arbitrary_locations=self.agent.bbox_list[self.agent.int_counter%len(self.agent.bbox_list)].get_visualize_locs(),
+                                                    arbitrary_point_value=self.agent.bbox_list[self.agent.int_counter%len(self.agent.bbox_list)].get_value(),
                                                     vehicle_velocity=self.agent.vehicle.velocity,
                                                     # rotate=self.agent.bbox.get_yaw()
                                                     )
@@ -244,7 +244,7 @@ class ROARppoEnvE2E(ROAREnv):
             map_list = self.agent.occupancy_map.get_map_baseline(transform_list=self.agent.vt_queue,
                                                     view_size=(CONFIG["x_res"], CONFIG["y_res"]),
                                                     bbox_list=self.agent.frame_queue,
-                                                                 next_bbox_list=self.agent.bbox_list[self.agent.int_counter-l:self.agent.int_counter+10-l]
+                                                                 next_bbox_list=self.agent.bbox_list[(self.agent.int_counter%len(self.agent.bbox_list))-l:(self.agent.int_counter%len(self.agent.bbox_list))+10-l]
                                                     )
             # data = cv2.resize(occu_map, (CONFIG["x_res"], CONFIG["y_res"]), interpolation=cv2.INTER_AREA)
             #cv2.imshow("Occupancy Grid Map", cv2.resize(np.float32(data), dsize=(500, 500)))
