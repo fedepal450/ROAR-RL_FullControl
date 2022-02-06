@@ -94,7 +94,7 @@ def main(pass_num):
     checkpoint_callback = CheckpointCallback(save_freq=3000*run_fps, verbose=2, save_path=(model_dir_path/"logs").as_posix())
     event_callback = EveryNTimesteps(n_steps=600*run_fps, callback=checkpoint_callback)
     callbacks = CallbackList([checkpoint_callback, event_callback, logging_callback])
-    model = model.learn(total_timesteps=int(1e8), callback=callbacks, reset_num_timesteps=False)
+    model = model.learn(total_timesteps=int(1e10), callback=callbacks, reset_num_timesteps=False)
     model.save(model_dir_path / f"roar_e2e_model_{pass_num}")
     print("Successful Save!")
 
