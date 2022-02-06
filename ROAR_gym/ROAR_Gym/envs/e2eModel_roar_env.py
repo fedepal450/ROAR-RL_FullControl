@@ -143,7 +143,7 @@ class ROARppoEnvE2E(ROAREnv):
         if self.crash_check:
             return 0
         # reward computation
-        current_speed = self.agent.bbox_list[self.agent.int_counter].get_directional_velocity(self.agent.vehicle.velocity.x,self.agent.vehicle.velocity.y)
+        current_speed = self.agent.bbox_list[self.agent.int_counter%len(self.agent.bbox_list)].get_directional_velocity(self.agent.vehicle.velocity.x,self.agent.vehicle.velocity.y)
         # current_speed = self.agent.vehicle.get_speed()
         self.speeds.append(current_speed)
 
