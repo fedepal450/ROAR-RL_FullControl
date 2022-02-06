@@ -421,7 +421,7 @@ class Atari_PPO_Adapted_CNN(BaseFeaturesExtractor):
         )
 
     def forward(self, observations: th.Tensor) -> th.Tensor:
-        observations=observations.view(1,-1,*observations.shape[3:])
+        observations=observations.view(observations.shape[0],-1,*observations.shape[3:])
         return self.network(observations)
 
 def find_latest_model(root_path: Path) -> Optional[Path]:
