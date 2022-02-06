@@ -101,8 +101,8 @@ class World(object):
         if self.carla_settings.synchronous_mode:
             settings.fixed_delta_seconds = self.carla_settings.fixed_delta_seconds
         settings.substepping = True
-        settings.max_substep_delta_time = 0.01
-        settings.max_substeps = 50
+        settings.max_substep_delta_time = 0.02
+        settings.max_substeps = 10
         self.carla_world.apply_settings(settings)
         self.carla_world.on_tick(hud.on_world_tick)
         self.logger.debug("World Initialized")
