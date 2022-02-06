@@ -64,6 +64,7 @@ class RLe2ePPOAgent(Agent):
         # self.occupancy_map.draw_bbox_list(self.bbox_list)
         for _ in range(4):
             self.bbox_step()
+        self.finish_loop=False
 
     def reset(self,vehicle: Vehicle):
         self.vehicle=vehicle
@@ -80,6 +81,7 @@ class RLe2ePPOAgent(Agent):
         for _ in range(4):
             self.bbox_step()
         #self._get_next_bbox()
+        self.finish_loop=False
 
     def run_step(self,vehicle: Vehicle) -> VehicleControl:
         # super(RLe2ePPOAgent, self).run_step(sensors_data, vehicle)
@@ -137,6 +139,7 @@ class RLe2ePPOAgent(Agent):
                 self.vt_queue.popleft()
                 self.vt_queue.append(self.vehicle.transform)
             return dist
+        self.finish_loop=True
         return False, 0.0
 
     def _get_all_bbox(self):
