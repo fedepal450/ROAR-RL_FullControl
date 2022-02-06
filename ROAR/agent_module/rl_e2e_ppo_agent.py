@@ -140,7 +140,7 @@ class RLe2ePPOAgent(Agent):
                 self.vt_queue.append(self.vehicle.transform)
             return dist
         self.finish_loop=True
-        return False, 0.0
+        return 0.0
 
     def _get_all_bbox(self):
         local_int_counter = 0
