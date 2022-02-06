@@ -70,9 +70,10 @@ def main(pass_num):
     run_fps=8
 
     training_kwargs = dict(
-        learning_rate=0.00001,
-        batch_size=64,
-        gamma=0.95,
+        learning_rate=0.00001,# be smaller 2.5e-4
+        batch_size=64, # mini_batch_size = 256?
+        gamma=0.99, # rec range .9 - .99
+        ent_coef=.00,# rec range .0 - .01
         seed=1,
         device=th.device('cuda:0' if th.cuda.is_available() else 'cpu'),
         verbose=1,
