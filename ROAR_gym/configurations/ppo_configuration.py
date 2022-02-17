@@ -11,18 +11,18 @@ misc_params = {
   "env_name": 'roar-e2e-ppo-v0',
   "run_fps": 8,  # TODO Link to the environment RUN_FPS
   "model_directory": Path("./output/PPOe2e"),
-  "run_name": "Run 1",
-  "total_timesteps": int(1e6),
+  "run_name": "base_test",
+  "total_timesteps": int(1e10),
 }
 
 wandb_saves = {
   # "gradient_save_freq": 3000 * misc_params["run_fps"],
-  "model_save_freq": 50 * misc_params["run_fps"],
+  "model_save_freq": 600 * misc_params["run_fps"],
 }
 
 PPO_params = dict(
   learning_rate=0.00001,  # be smaller 2.5e-4
-  n_steps=1000 * misc_params["run_fps"],
+  n_steps=60 * misc_params["run_fps"],
   batch_size=64,  # mini_batch_size = 256?
   # n_epochs=10,
   gamma=0.99,  # rec range .9 - .99
@@ -32,8 +32,8 @@ PPO_params = dict(
   # ent_coef=0.0,
   # vf_coef=0.5,
   # max_grad_norm=0.5,
-  use_sde=True,
-  sde_sample_freq=5,
+  # use_sde=True,
+  # sde_sample_freq=5,
   # target_kl=None,
   # tensorboard_log=(Path(misc_params["model_directory"]) / "tensorboard").as_posix(),
   # create_eval_env=False,
