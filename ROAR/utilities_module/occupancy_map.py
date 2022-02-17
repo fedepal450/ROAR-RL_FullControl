@@ -379,7 +379,7 @@ class OccupancyGridMap(Module):
                 image = image.rotate(yaw)
                 tmp[i] = np.asarray(image)
                 x_extra, y_extra = boundary_size[0] // 2, boundary_size[1] // 2
-                tmp[i] = tmp[i][y_extra: tmp[i].shape[1] - y_extra,
+                tmp[i] = tmp[i][y_extra-view_size[1]//4: tmp[i].shape[1] - y_extra-view_size[1]//4,
                               x_extra: tmp[i].shape[0] - x_extra]
             tmp.append(sum(tmp))
             ret.append(tmp)

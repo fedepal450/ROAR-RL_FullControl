@@ -41,14 +41,8 @@ class ROARppoEnvE2E(ROAREnv):
     def __init__(self, params):
         super().__init__(params)
         #self.action_space = Discrete(len(DISCRETE_ACTIONS))
-        # low=np.array([-6.0, -10.0, 2.0])
-        # high=np.array([-1.0, 10.0, 12.0])
-
-        # Update above to(Dated 2/6/2021):
-        low = np.array([-2.5, -10.0, 1.0])
-        high = np.array([-0.5, 10.0, 6.0])
-
-
+        low=np.array([-2.5, -5.0, 1.0])
+        high=np.array([-0.5, 5.0, 3.0])
         # low=np.array([100, 0, -1])
         # high=np.array([1, 0.12, 0.5])
         self.mode=mode
@@ -76,25 +70,24 @@ class ROARppoEnvE2E(ROAREnv):
         self.prev_int_counter = 0
         self.steps=0
         self.largest_steps=0
+        self.highspeed=0
+        self.complete_loop=False
+        self.his_checkpoint=[]
+        self.his_score=[]
 
     def step(self, action: Any) -> Tuple[Any, float, bool, dict]:
         obs = []
         rewards = []
         self.steps+=1
-
         for i in range(1):
-            # throttle=np.min([np.power(action[i*3+0],0.1)*2,1])
-            # steering=np.sign(action[i*3+1])*np.max([np.power(action[i*3+1],10)-0.5,0])
-            # braking=np.max([np.square(action[i*3+2])-0.9,0])
-            throttle=.8#(action[i*3+0]+1)/5+1
-            steering=action[i*3+1]/10
-            braking=0#(action[i*3+2]-2)/10
-
-            # Update above to(Dated 2/6/2021):
             # throttle=(action[i*3+0]+0.5)/2+1
-            # steering = action[i * 3 + 1] / 10
-            # braking=(action[i*3+2]-1)/5
-
+            throttle=0.8#(action[i*3+2]-1)/2==0
+            # target_steering=action[i*3+1]/10
+            # cur_steering=self.agent.vehicle.control.steering
+            # steering=max(min(cur_steering+0.1,target_steering),cur_steering-0.1)
+            # steering=np.sign(action[i*3+1])*max(0,(abs(action[i*3+1])-0.5))/4
+            steering=action[i*3+1]/5
+            braking=0#(action[i*3+2]-1)/2
             # throttle=min(max(action[i*3+0],0),1)
             # steering=min(max(action[i*3+1],-1),1)
             # braking=min(max(action[i*3+2],0),1)
@@ -113,7 +106,6 @@ class ROARppoEnvE2E(ROAREnv):
             # self.wandb_logger()
             self.crash_check = False
             self.update_highscore()
-            self.ep_rewards = 0
         return np.array(obs), self.frame_reward, self._terminal(), self._get_info()
 
     def _get_info(self) -> dict:
@@ -124,6 +116,10 @@ class ROARppoEnvE2E(ROAREnv):
         info_dict["checkpoints"] = self.agent.int_counter*self.agent.interval
         info_dict["reward"] = self.frame_reward
         info_dict["largest_steps"] = self.largest_steps
+        info_dict["highest_speed"] = self.highspeed
+        info_dict["complete_state"]=self.complete_loop
+        info_dict["avg10_checkpoints"]=np.average(self.his_checkpoint)
+        info_dict["avg10_score"]=np.average(self.his_score)
         # info_dict["throttle"] = action[0]
         # info_dict["steering"] = action[1]
         # info_dict["braking"] = action[2]
@@ -134,22 +130,27 @@ class ROARppoEnvE2E(ROAREnv):
             self.highscore = self.ep_rewards
         if self.agent.int_counter > self.highest_chkpt:
             self.highest_chkpt = self.agent.int_counter
-        self.ep_rewards = 0
+        if self.agent.vehicle.get_speed(self.agent.vehicle)>self.highspeed:
+            self.highspeed=self.agent.vehicle.get_speed(self.agent.vehicle)
         return
 
     def _terminal(self) -> bool:
-        if self.carla_runner.get_num_collision() > self.max_collision_allowed or self.agent.finish_loop:
+        if self.carla_runner.get_num_collision() > self.max_collision_allowed:
             # crash_rep = open("crash_spot.txt", "a")
             # loc = np.array([self.agent.vehicle.transform.location.x, self.agent.vehicle.transform.location.y, self.agent.vehicle.transform.location.z])
             # np.savetxt(crash_rep, loc, delimiter=',')
             # crash_rep.close()
+            return True
+        elif self.agent.finish_loop:
+            self.complete_loop=True
             return True
         else:
             return False
 
     def get_reward(self) -> float:
         # prep for reward computation
-        reward = -0.1*(1-self.agent.vehicle.control.throttle+100*self.agent.vehicle.control.braking+abs(self.agent.vehicle.control.steering))/50
+        # reward = -0.1*(1-self.agent.vehicle.control.throttle+10*self.agent.vehicle.control.braking+abs(self.agent.vehicle.control.steering))*400/8
+        reward=-1
         curr_dist_to_strip = self.agent.curr_dist_to_strip
 
         if self.crash_check:
@@ -162,14 +163,14 @@ class ROARppoEnvE2E(ROAREnv):
         if self.agent.cross_reward > self.prev_cross_reward:
             num_crossed = self.agent.int_counter - self.prev_int_counter
             #speed reward
-            reward+= np.average(self.speeds) * num_crossed/4
+            reward+= np.average(self.speeds) * num_crossed/8
             self.speeds=[]
             self.prev_int_counter =self.agent.int_counter
             #crossing reward
-            reward += 4*(self.agent.cross_reward - self.prev_cross_reward)*self.agent.interval
+            reward += 8*(self.agent.cross_reward - self.prev_cross_reward)*self.agent.interval
 
         if self.carla_runner.get_num_collision() > 0:
-            reward -= 100#0 /(min(total_num_cross,10))
+            reward -= 200#0# /(min(total_num_cross,10))
             self.crash_check = True
 
         # log prev info for next reward computation
@@ -188,11 +189,19 @@ class ROARppoEnvE2E(ROAREnv):
             # x_dis,y_dis,xy_dis=line_location[:3]/40
             # l_yaw,vtol_yaw=line_location[3:]
             # data=np.array([v_speed,v_height,v_roll,v_pitch,v_yaw,v_throttle,v_steering,v_braking,x_dis,y_dis,xy_dis,l_yaw,vtol_yaw])
-            l=len(self.agent.bbox_list)
+            # l=len(self.agent.bbox_list)
+            index_from=(self.agent.int_counter%len(self.agent.bbox_list))
+            if index_from+10<=len(self.agent.bbox_list):
+                # print(index_from,len(self.agent.bbox_list),index_from+10-len(self.agent.bbox_list))
+                next_bbox_list=self.agent.bbox_list[index_from:index_from+10]
+            else:
+                # print(index_from,len(self.agent.bbox_list),index_from+10-len(self.agent.bbox_list))
+                next_bbox_list=self.agent.bbox_list[index_from:]+self.agent.bbox_list[:index_from+10-len(self.agent.bbox_list)]
+            assert(len(next_bbox_list)==10)
             map_list = self.agent.occupancy_map.get_map_baseline(transform_list=self.agent.vt_queue,
                                                     view_size=(CONFIG["x_res"], CONFIG["y_res"]),
                                                     bbox_list=self.agent.frame_queue,
-                                                                 next_bbox_list=self.agent.bbox_list[(self.agent.int_counter%len(self.agent.bbox_list))-l:(self.agent.int_counter%len(self.agent.bbox_list))+10-l]
+                                                                 next_bbox_list=next_bbox_list
                                                     )
             # data = cv2.resize(occu_map, (CONFIG["x_res"], CONFIG["y_res"]), interpolation=cv2.INTER_AREA)
             #cv2.imshow("Occupancy Grid Map", cv2.resize(np.float32(data), dsize=(500, 500)))
@@ -235,9 +244,18 @@ class ROARppoEnvE2E(ROAREnv):
     #3location 3 rotation 3velocity 20 waypoline locations 20 wayline rewards
 
     def reset(self) -> Any:
-        super(ROARppoEnvE2E, self).reset()
-        if self.steps>self.largest_steps:
+        if len(self.his_checkpoint)>=10:
+            self.his_checkpoint=self.his_checkpoint[-10:]
+            self.his_score=self.his_score[-10:]
+        if self.agent:
+            self.his_checkpoint.append(self.agent.int_counter*self.agent.interval)
+            self.his_score.append(self.ep_rewards)
+        self.ep_rewards = 0
+        if self.steps>self.largest_steps and not self.complete_loop:
             self.largest_steps=self.steps
+        elif self.complete_loop and self.agent.finish_loop and self.steps<self.largest_steps:
+            self.largest_steps=self.steps
+        super(ROARppoEnvE2E, self).reset()
         self.steps=0
         return self._get_obs()
 
