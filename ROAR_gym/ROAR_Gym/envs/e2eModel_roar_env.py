@@ -103,7 +103,7 @@ class ROARppoEnvE2E(ROAREnv):
         self.frame_reward = sum(rewards)
         self.ep_rewards += sum(rewards)
         if is_done:
-            # self.wandb_logger()
+            self.wandb_logger()
             self.crash_check = False
             self.update_highscore()
         return np.array(obs), self.frame_reward, self._terminal(), self._get_info()
@@ -262,7 +262,13 @@ class ROARppoEnvE2E(ROAREnv):
     def wandb_logger(self):
         wandb.log({
             "episode reward": self.ep_rewards,
-            "global_step":self.steps
+            "global_step":self.steps,
+            "Furthest Checkpoint" : self.highest_chkpt*self.agent.interval,
+            "Current HIGHSCORE" : self.highscore,
+            "largest_steps" : self.largest_steps,
+            "highest_speed" : self.highspeed,
+            "avg10_checkpoints":np.average(self.his_checkpoint),
+            "avg10_score":np.average(self.his_score)
 
         })
         return
