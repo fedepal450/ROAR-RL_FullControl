@@ -261,10 +261,8 @@ class ROARppoEnvE2E(ROAREnv):
 
     def wandb_logger(self):
         wandb.log({
-            "episode reward": self.ep_rewards,
-            "global_step":self.steps,
-            "Furthest Checkpoint" : self.highest_chkpt*self.agent.interval,
-            "Current HIGHSCORE" : self.highscore,
+            "Episode reward": self.ep_rewards,
+            "Checkpoint reached": self.agent.int_counter*self.agent.interval,
             "largest_steps" : self.largest_steps,
             "highest_speed" : self.highspeed,
             "avg10_checkpoints":np.average(self.his_checkpoint),

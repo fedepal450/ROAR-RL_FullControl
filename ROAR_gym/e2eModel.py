@@ -64,7 +64,7 @@ import gym
 import torch as th
 from stable_baselines3.ppo.ppo import PPO
 from stable_baselines3.ppo.policies import CnnPolicy
-from stable_baselines3.common.callbacks import CheckpointCallback, EveryNTimesteps, CallbackList
+from stable_baselines3.common.callbacks import CheckpointCallback, EveryNTimesteps, CallbackList, BaseCallback
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.vec_env import DummyVecEnv, VecVideoRecorder
 
@@ -175,6 +175,28 @@ def wandb_run_init(wandb_hp_config, load=False, requested_run_id=None, use_rando
     return run
 
 
+class Tensorboard_Faster_Logger(BaseCallback):
+    """
+    Callback for saving a model (the check is done every ``check_freq`` steps)
+    based on the training reward (in practice, we recommend using ``EvalCallback``).
+
+    :param check_freq:
+    :param log_dir: Path to the folder where the model will be saved.
+      It must contains the file created by the ``Monitor`` wrapper.
+    :param verbose: Verbosity level.
+    """
+    def __init__(self, check_freq: int, verbose: int = 1):
+        super(Tensorboard_Faster_Logger, self).__init__(verbose)
+        self.check_freq = check_freq
+
+    # def _init_callback(self) -> None:
+
+    def _on_step(self) -> bool:
+        if self.n_calls % self.check_freq == 0:
+            self.logger.dump(self.num_timesteps)
+        return True
+
+
 def main(pass_num):
     # Create the gym environment using the configs
     env = gym.make(
@@ -254,6 +276,8 @@ def main(pass_num):
 
     logging_callback = LoggingCallback(model=model)
 
+    faster_Logging_Callback = Tensorboard_Faster_Logger(check_freq=wandb_saves["model_save_freq"])
+
     checkpoint_callback = CheckpointCallback(
         save_freq=wandb_saves["model_save_freq"],
         verbose=2,
@@ -277,6 +301,7 @@ def main(pass_num):
         checkpoint_callback,
         event_callback,
         logging_callback
+        # faster_Logging_Callback
     ])
 
     # Begin learning
