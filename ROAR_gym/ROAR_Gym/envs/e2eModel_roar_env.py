@@ -266,7 +266,6 @@ class ROARppoEnvE2E(ROAREnv):
             "largest_steps" : self.largest_steps,
             "highest_speed" : self.highspeed,
             "avg10_checkpoints":np.average(self.his_checkpoint),
-            "avg10_score":np.average(self.his_score)
-
+            "avg10_score":np.average(self.his_score),
         })
         return
