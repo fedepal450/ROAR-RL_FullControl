@@ -74,6 +74,7 @@ class ROARppoEnvE2E(ROAREnv):
         self.complete_loop=False
         self.his_checkpoint=[]
         self.his_score=[]
+        self.time_to_waypoint_ratio = 4
 
     def step(self, action: Any) -> Tuple[Any, float, bool, dict]:
         obs = []
@@ -167,7 +168,7 @@ class ROARppoEnvE2E(ROAREnv):
             # self.speeds=[]
             # self.prev_int_counter =self.agent.int_counter
             #crossing reward
-            reward += (self.agent.cross_reward - self.prev_cross_reward)*self.agent.interval*4
+            reward += (self.agent.cross_reward - self.prev_cross_reward)*self.agent.interval*self.time_to_waypoint_ratio
 
         if self.carla_runner.get_num_collision() > 0:
             reward -= 200#0# /(min(total_num_cross,10))
