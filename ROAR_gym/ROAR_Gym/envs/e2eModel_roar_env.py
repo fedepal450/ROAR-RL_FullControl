@@ -156,18 +156,18 @@ class ROARppoEnvE2E(ROAREnv):
         if self.crash_check:
             return 0
         # reward computation
-        current_speed = self.agent.bbox_list[self.agent.int_counter%len(self.agent.bbox_list)].get_directional_velocity(self.agent.vehicle.velocity.x,self.agent.vehicle.velocity.y)
+        # current_speed = self.agent.bbox_list[self.agent.int_counter%len(self.agent.bbox_list)].get_directional_velocity(self.agent.vehicle.velocity.x,self.agent.vehicle.velocity.y)
         # current_speed = self.agent.vehicle.get_speed()
-        self.speeds.append(current_speed)
+        # self.speeds.append(current_speed)
 
         if self.agent.cross_reward > self.prev_cross_reward:
-            num_crossed = self.agent.int_counter - self.prev_int_counter
+            # num_crossed = self.agent.int_counter - self.prev_int_counter
             #speed reward
-            reward+= np.average(self.speeds) * num_crossed/8
-            self.speeds=[]
-            self.prev_int_counter =self.agent.int_counter
+            # reward+= np.average(self.speeds) * num_crossed/8
+            # self.speeds=[]
+            # self.prev_int_counter =self.agent.int_counter
             #crossing reward
-            reward += 8*(self.agent.cross_reward - self.prev_cross_reward)*self.agent.interval
+            reward += (self.agent.cross_reward - self.prev_cross_reward)*self.agent.interval*4
 
         if self.carla_runner.get_num_collision() > 0:
             reward -= 200#0# /(min(total_num_cross,10))
