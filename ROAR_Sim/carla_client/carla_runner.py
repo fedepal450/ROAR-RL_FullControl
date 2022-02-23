@@ -311,6 +311,7 @@ class CarlaRunner:
     def get_num_collision(self):
         collision_sensor: CollisionSensor = self.world.collision_sensor
         return len(collision_sensor.history)
-
+    def get_world(self):
+        return self.world
     def check_version(self, client):
         return ("0.9.9" in client.get_server_version()) == ("0.9.9" in client.get_client_version())
