@@ -152,7 +152,7 @@ class ROARppoEnvE2E(ROAREnv):
         # prep for reward computation
         # reward = -0.1*(1-self.agent.vehicle.control.throttle+10*self.agent.vehicle.control.braking+abs(self.agent.vehicle.control.steering))*400/8
         reward=-1
-        curr_dist_to_strip = self.agent.curr_dist_to_strip
+        # curr_dist_to_strip = self.agent.curr_dist_to_strip
 
         if self.crash_check:
             return 0

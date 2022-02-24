@@ -34,6 +34,7 @@ class RLe2ePPOAgent(Agent):
         # )#TO REMOVE
 
         # the part about visualization
+        self.flatten=True
         self.occupancy_map = OccupancyGridMap(agent=self, threaded=True)
 
         occ_file_path = Path("../ROAR_Sim/data/berkeley_minor_cleaned_global_occu_map.npy")
@@ -47,14 +48,17 @@ class RLe2ePPOAgent(Agent):
         self.look_back_max = self.kwargs.get('look_back_max', 10)
         self.thres = self.kwargs.get('thres', 1e-3)
 
-        middle=scipy.stats.norm(20//2, 20//3).pdf(20//2)
-        self.bbox_reward_list=[scipy.stats.norm(20//2, 20//3).pdf(i)/middle*0.5 for i in  range(20)]
+        if self.flatten:
+            self.bbox_reward_list=[0.5 for _ in range(20)]
+        else:
+            middle=scipy.stats.norm(20//2, 20//3).pdf(20//2)
+            self.bbox_reward_list=[scipy.stats.norm(20//2, 20//3).pdf(i)/middle*0.5 for i in range(20)]
 
         self.int_counter = 0
         self.cross_reward=0
         self.counter = 0
         self.finished = False
-        self.curr_dist_to_strip = 0
+        # self.curr_dist_to_strip = 0
         self.bbox: Optional[LineBBox] = None
         self.bbox_list = []# list of bbox
         self.frame_queue = deque([None, None, None], maxlen=4)
@@ -72,7 +76,7 @@ class RLe2ePPOAgent(Agent):
         self.cross_reward=0
         self.counter = 0
         self.finished = False
-        self.curr_dist_to_strip = 0
+        # self.curr_dist_to_strip = 0
         self.bbox: Optional[LineBBox] = None
         # self.bbox_list = []# list of bbox
         #self.bbox_list = []# list of bbox
@@ -89,7 +93,7 @@ class RLe2ePPOAgent(Agent):
         #self.local_planner.run_in_series()#TO REMOVE
 
         self.vehicle = vehicle
-        self.curr_dist_to_strip = self.bbox_step()
+        self.bbox_step()
 
     def bbox_step(self):
         """
@@ -118,7 +122,7 @@ class RLe2ePPOAgent(Agent):
             self.finish_loop=True
         currentframe_crossed = []
 
-        while(True):
+        while(self.vehicle.transform.location.x!=0):
             crossed, dist = self.bbox_list[self.int_counter%len(self.bbox_list)].has_crossed(self.vehicle.transform)
             if crossed:
                 self.cross_reward+=crossed
@@ -140,7 +144,6 @@ class RLe2ePPOAgent(Agent):
         else:
             self.vt_queue.popleft()
             self.vt_queue.append(self.vehicle.transform)
-        return dist
 
     def _get_all_bbox(self):
         local_int_counter = 0
@@ -161,7 +164,7 @@ class RLe2ePPOAgent(Agent):
             if abs(dx) < self.thres and abs(dz) < self.thres:
                 curr_lb += 1
             else:
-                self.bbox_list.append(LineBBox(t1, t2, self.bbox_reward_list))
+                self.bbox_list.append(LineBBox(t1, t2, self.bbox_reward_list,self.flatten))
                 local_int_counter += 1
                 curr_lb = self.look_back
                 curr_idx = local_int_counter * self.interval
@@ -188,7 +191,7 @@ class RLe2ePPOAgent(Agent):
             if abs(dx) < self.thres and abs(dz) < self.thres:
                 curr_lb += 1
             else:
-                self.bbox = LineBBox(t1, t2,self.bbox_reward_list)
+                self.bbox = LineBBox(t1, t2,self.bbox_reward_list,self.flatten)
                 return
         # no next bbox
         print("finished all the iterations!")
@@ -196,7 +199,7 @@ class RLe2ePPOAgent(Agent):
 
 
 class LineBBox(object):
-    def __init__(self, transform1: Transform, transform2: Transform,bbox_reward_list) -> None:
+    def __init__(self, transform1: Transform, transform2: Transform,bbox_reward_list,flatten) -> None:
         self.x1, self.z1 = transform1.location.x, transform1.location.z
         self.x2, self.z2 = transform2.location.x, transform2.location.z
         #print(self.x2, self.z2)
@@ -209,6 +212,7 @@ class LineBBox(object):
         self.bbox_reward_list=bbox_reward_list
         self.strip_list = None
         self.generate_visualize_locs(20)
+        self.flatten=flatten
 
         if self.eq(self.x1, self.z1) > 0:
             self.pos_true = False
@@ -270,8 +274,11 @@ class LineBBox(object):
         x, z = transform.location.x, transform.location.z
         dist = self.eq(x, z)
         crossed=dist > 0 if self.pos_true else dist < 0
-        middle=scipy.stats.norm(self.size//2, self.size//2).pdf(self.size//2)
-        return (scipy.stats.norm(self.size//2, self.size//2).pdf(self.size//2-self.dis(x, z))/middle if crossed else 0, dist)
+        if self.flatten:
+            return (crossed,dist)
+        else:
+            middle=scipy.stats.norm(self.size//2, self.size//2).pdf(self.size//2)
+            return (scipy.stats.norm(self.size//2, self.size//2).pdf(self.size//2-self.dis(x, z))/middle if crossed else 0, dist)
 
     def generate_visualize_locs(self, size=10):
         if self.strip_list is not None:
