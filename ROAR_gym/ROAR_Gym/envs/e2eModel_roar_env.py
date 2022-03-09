@@ -74,13 +74,13 @@ class ROARppoEnvE2E(ROAREnv):
         self.complete_loop=False
         self.his_checkpoint=[]
         self.his_score=[]
-        self.time_to_waypoint_ratio = 4
         self.crash_step=0
         self.reward_step=0
         self.reset_by_crash=False
         self.fps=8
         self.crash_tol=5
         self.reward_tol=5
+        self.time_to_waypoint_ratio = 0.25
 
     def step(self, action: Any) -> Tuple[Any, float, bool, dict]:
         obs = []
@@ -148,19 +148,18 @@ class ROARppoEnvE2E(ROAREnv):
             # np.savetxt(crash_rep, loc, delimiter=',')
             # crash_rep.close()
             return True
-        if not self.reset_by_crash and self.steps-self.reward_step>self.reward_tol*self.fps:
+        if not self.reset_by_crash and self.steps - self.reward_step > self.reward_tol * self.fps:
             return True
         if self.agent.finish_loop:
-            self.complete_loop=True
+            self.complete_loop = True
             return True
         return False
 
     def get_reward(self) -> float:
         # prep for reward computation
         # reward = -0.1*(1-self.agent.vehicle.control.throttle+10*self.agent.vehicle.control.braking+abs(self.agent.vehicle.control.steering))*400/8
-        reward=-1
+        reward = -1
         # curr_dist_to_strip = self.agent.curr_dist_to_strip
-
 
         if self.reset_by_crash and self.crash_check:
             return 0
@@ -171,23 +170,24 @@ class ROARppoEnvE2E(ROAREnv):
 
         if self.agent.cross_reward > self.prev_cross_reward:
             # num_crossed = self.agent.int_counter - self.prev_int_counter
-            #speed reward
+            # speed reward
             # reward+= np.average(self.speeds) * num_crossed/8
             # self.speeds=[]
             # self.prev_int_counter =self.agent.int_counter
-            #crossing reward
-            reward += (self.agent.cross_reward - self.prev_cross_reward)*self.agent.interval*self.time_to_waypoint_ratio
-            self.reward_step=self.steps
+            # crossing reward
+            reward += (
+                                  self.agent.cross_reward - self.prev_cross_reward) * self.agent.interval * self.time_to_waypoint_ratio
+            self.reward_step = self.steps
 
-        if self.steps-self.crash_step>self.crash_tol*self.fps:
+        if self.steps - self.crash_step > self.crash_tol * self.fps:
             if self.carla_runner.get_num_collision() > 0:
                 if self.reset_by_crash:
-                    reward -= 200#0# /(min(total_num_cross,10))
+                    reward -= 200  # 0# /(min(total_num_cross,10))
                 self.crash_check = True
-                self.crash_step=self.steps
+                self.crash_step = self.steps
             else:
                 self.crash_check = False
-        if not self.reset_by_crash and self.steps-self.reward_step>self.reward_tol*self.fps:
+        if not self.reset_by_crash and self.steps - self.reward_step > self.reward_tol * self.fps:
             reward -= 200
         # log prev info for next reward computation
         self.prev_speed = Vehicle.get_speed(self.agent.vehicle)
@@ -272,9 +272,9 @@ class ROARppoEnvE2E(ROAREnv):
         elif self.complete_loop and self.agent.finish_loop and self.steps<self.largest_steps:
             self.largest_steps=self.steps
         super(ROARppoEnvE2E, self).reset()
-        self.steps=0
-        self.crash_step=0
-        self.reward_step=0
+        self.steps = 0
+        self.crash_step = 0
+        self.reward_step = 0
         return self._get_obs()
 
     def wandb_logger(self):
