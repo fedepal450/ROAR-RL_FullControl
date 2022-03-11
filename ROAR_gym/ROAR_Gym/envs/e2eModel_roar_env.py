@@ -74,7 +74,7 @@ class ROARppoEnvE2E(ROAREnv):
         self.complete_loop=False
         self.his_checkpoint=[]
         self.his_score=[]
-        self.time_to_waypoint_ratio = 4
+        self.time_to_waypoint_ratio = 0.25
         self.crash_step=0
         self.reward_step=0
         self.reset_by_crash=False
