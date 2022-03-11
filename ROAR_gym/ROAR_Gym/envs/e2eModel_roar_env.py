@@ -81,6 +81,7 @@ class ROARppoEnvE2E(ROAREnv):
         self.fps=8
         self.crash_tol=5
         self.reward_tol=5
+        self.end_check=False
 
     def step(self, action: Any) -> Tuple[Any, float, bool, dict]:
         obs = []
@@ -147,11 +148,14 @@ class ROARppoEnvE2E(ROAREnv):
             # loc = np.array([self.agent.vehicle.transform.location.x, self.agent.vehicle.transform.location.y, self.agent.vehicle.transform.location.z])
             # np.savetxt(crash_rep, loc, delimiter=',')
             # crash_rep.close()
+            self.end_check=True
             return True
         if not self.reset_by_crash and self.steps-self.reward_step>self.reward_tol*self.fps:
+            self.end_check=True
             return True
         if self.agent.finish_loop:
             self.complete_loop=True
+            self.end_check=True
             return True
         return False
 
@@ -160,7 +164,8 @@ class ROARppoEnvE2E(ROAREnv):
         # reward = -0.1*(1-self.agent.vehicle.control.throttle+10*self.agent.vehicle.control.braking+abs(self.agent.vehicle.control.steering))*400/8
         reward=-1
         # curr_dist_to_strip = self.agent.curr_dist_to_strip
-
+        if self.end_check:
+            return 0
 
         if self.reset_by_crash and self.crash_check:
             return 0
