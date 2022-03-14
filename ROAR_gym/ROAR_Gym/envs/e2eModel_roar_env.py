@@ -150,7 +150,7 @@ class ROARppoEnvE2E(ROAREnv):
             # crash_rep.close()
             self.end_check=True
             return True
-        if not self.reset_by_crash and self.steps-self.reward_step>self.reward_tol*self.fps:
+        if not self.reset_by_crash and self.steps-self.reward_step>self.reward_tol*self.fps and self.steps>5*self.fps:
             self.end_check=True
             return True
         if self.agent.finish_loop:
@@ -192,7 +192,7 @@ class ROARppoEnvE2E(ROAREnv):
                 self.crash_step=self.steps
             else:
                 self.crash_check = False
-        if not self.reset_by_crash and self.steps-self.reward_step>self.reward_tol*self.fps:
+        if not self.reset_by_crash and self.steps-self.reward_step>self.reward_tol*self.fps and self.steps>5*self.fps:
             reward -= 200
         # log prev info for next reward computation
         self.prev_speed = Vehicle.get_speed(self.agent.vehicle)
