@@ -75,27 +75,35 @@ class ROARppoEnvE2E(ROAREnv):
         self.his_checkpoint=[]
         self.his_score=[]
         self.time_to_waypoint_ratio = 0.25
-        self.crash_step=0
-        self.reward_step=0
-        self.reset_by_crash=False
+        # self.crash_step=0
+        # self.reward_step=0
+        # self.reset_by_crash=True
         self.fps=8
-        self.crash_tol=5
-        self.reward_tol=5
-        self.end_check=False
+        # self.crash_tol=5
+        # self.reward_tol=5
+        # self.end_check=False
 
     def step(self, action: Any) -> Tuple[Any, float, bool, dict]:
         obs = []
         rewards = []
         self.steps+=1
         for i in range(1):
-            # throttle=(action[i*3+0]+0.5)/2+1
-            throttle=0.8#(action[i*3+2]-1)/2==0
+            # throttle=(action[i*3]+0.5)/2+1
+            check = (action[i*3+0]+0.5)/2+1
+            if check > 0.5:
+                throttle = 1
+                braking = 0
+            else:
+                throttle = 0
+                braking = .8
+
+
             # target_steering=action[i*3+1]/10
             # cur_steering=self.agent.vehicle.control.steering
             # steering=max(min(cur_steering+0.1,target_steering),cur_steering-0.1)
             # steering=np.sign(action[i*3+1])*max(0,(abs(action[i*3+1])-0.5))/4
             steering=action[i*3+1]/5
-            braking=0#(action[i*3+2]-1)/2
+            # braking=0#(action[i*3+2]-1)/2
             # throttle=min(max(action[i*3+0],0),1)
             # steering=min(max(action[i*3+1],-1),1)
             # braking=min(max(action[i*3+2],0),1)
@@ -143,31 +151,41 @@ class ROARppoEnvE2E(ROAREnv):
         return
 
     def _terminal(self) -> bool:
-        if self.reset_by_crash and self.carla_runner.get_num_collision() > self.max_collision_allowed:
+        if self.carla_runner.get_num_collision() > self.max_collision_allowed:
+            #################REVERT FROM 2.1.7
+        # if self.reset_by_crash and self.carla_runner.get_num_collision() > self.max_collision_allowed:
             # crash_rep = open("crash_spot.txt", "a")
             # loc = np.array([self.agent.vehicle.transform.location.x, self.agent.vehicle.transform.location.y, self.agent.vehicle.transform.location.z])
             # np.savetxt(crash_rep, loc, delimiter=',')
             # crash_rep.close()
             self.end_check=True
             return True
-        if not self.reset_by_crash and self.steps-self.reward_step>self.reward_tol*self.fps and self.steps>5*self.fps:
-            self.end_check=True
-            return True
-        if self.agent.finish_loop:
+        #################REVERT FROM 2.1.7
+        # if not self.reset_by_crash and self.steps-self.reward_step>self.reward_tol*self.fps and self.steps>5*self.fps:
+        #     self.end_check=True
+        #     return True
+        # if self.agent.finish_loop:
+        #     self.complete_loop=True
+        #     self.end_check=True
+        #     return True
+        # return False
+        elif self.agent.finish_loop:
             self.complete_loop=True
-            self.end_check=True
             return True
-        return False
+        else:
+            return False
 
     def get_reward(self) -> float:
         # prep for reward computation
         # reward = -0.1*(1-self.agent.vehicle.control.throttle+10*self.agent.vehicle.control.braking+abs(self.agent.vehicle.control.steering))*400/8
         reward=-1
         # curr_dist_to_strip = self.agent.curr_dist_to_strip
-        if self.end_check:
-            return 0
-
-        if self.reset_by_crash and self.crash_check:
+        #################REVERT FROM 2.1.7
+        # if self.end_check:
+        #     return 0
+        #################REVERT FROM 2.1.7
+        # if self.reset_by_crash and self.crash_check:
+        if self.crash_check:
             return 0
         # reward computation
         # current_speed = self.agent.bbox_list[self.agent.int_counter%len(self.agent.bbox_list)].get_directional_velocity(self.agent.vehicle.velocity.x,self.agent.vehicle.velocity.y)
@@ -182,18 +200,25 @@ class ROARppoEnvE2E(ROAREnv):
             # self.prev_int_counter =self.agent.int_counter
             #crossing reward
             reward += (self.agent.cross_reward - self.prev_cross_reward)*self.agent.interval*self.time_to_waypoint_ratio
-            self.reward_step=self.steps
+            #################REVERT FROM 2.1.7
+            # self.reward_step=self.steps
 
-        if self.steps-self.crash_step>self.crash_tol*self.fps:
-            if self.carla_runner.get_num_collision() > 0:
-                if self.reset_by_crash:
-                    reward -= 200#0# /(min(total_num_cross,10))
-                self.crash_check = True
-                self.crash_step=self.steps
-            else:
-                self.crash_check = False
-        if not self.reset_by_crash and self.steps-self.reward_step>self.reward_tol*self.fps and self.steps>5*self.fps:
+        #################REVERT FROM 2.1.7
+        # if self.steps-self.crash_step>self.crash_tol*self.fps:
+        #     if self.carla_runner.get_num_collision() > 0:
+        #         if self.reset_by_crash:
+        #             reward -= 200#0# /(min(total_num_cross,10))
+        #         self.crash_check = True
+        #         self.crash_step=self.steps
+        #     else:
+        #         self.crash_check = False
+        # if not self.reset_by_crash and self.steps-self.reward_step>self.reward_tol*self.fps and self.steps>5*self.fps:
+        #     reward -= 200
+        if self.carla_runner.get_num_collision() > 0:
             reward -= 200
+            self.crash_check = True
+
+
         # log prev info for next reward computation
         self.prev_speed = Vehicle.get_speed(self.agent.vehicle)
         self.prev_cross_reward = self.agent.cross_reward
@@ -278,8 +303,8 @@ class ROARppoEnvE2E(ROAREnv):
             self.largest_steps=self.steps
         super(ROARppoEnvE2E, self).reset()
         self.steps=0
-        self.crash_step=0
-        self.reward_step=0
+        # self.crash_step=0
+        # self.reward_step=0
         return self._get_obs()
 
     def wandb_logger(self):

@@ -18,9 +18,9 @@
   "carla_vehicle_blueprint_filter": "vehicle.tesla.model3",
   "role_name": "hero",
   "car_color": {
-    "r": 66,
-    "g": 224,
-    "b": 255,
+    "r": 212,
+    "g": 175,
+    "b": 55,
     "a": 0
   },
   "gamma": 2.2,

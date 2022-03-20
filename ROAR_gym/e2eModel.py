@@ -17,7 +17,7 @@ with th.no_grad():
     obs_tensor = obs_as_tensor(self._last_obs, self.device)
     actions, values, log_probs = self.policy.forward(obs_tensor)
 
-3. Add:
+3. Add: #############################################################################still needed?###########
 
         data.pop('_last_obs')
 
