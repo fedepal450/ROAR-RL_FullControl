@@ -82,6 +82,7 @@ class ROARppoEnvE2E(ROAREnv):
         # self.crash_tol=5
         # self.reward_tol=5
         # self.end_check=False
+        self.death_line_dis = 5
 
     def step(self, action: Any) -> Tuple[Any, float, bool, dict]:
         obs = []
@@ -151,24 +152,10 @@ class ROARppoEnvE2E(ROAREnv):
         return
 
     def _terminal(self) -> bool:
-        if self.carla_runner.get_num_collision() > self.max_collision_allowed:
-            #################REVERT FROM 2.1.7
-        # if self.reset_by_crash and self.carla_runner.get_num_collision() > self.max_collision_allowed:
-            # crash_rep = open("crash_spot.txt", "a")
-            # loc = np.array([self.agent.vehicle.transform.location.x, self.agent.vehicle.transform.location.y, self.agent.vehicle.transform.location.z])
-            # np.savetxt(crash_rep, loc, delimiter=',')
-            # crash_rep.close()
-            self.end_check=True
+        if not (self.agent.bbox_list[(self.agent.int_counter - self.death_line_dis) % len(self.agent.bbox_list)].has_crossed(self.agent.vehicle.transform))[0]:
             return True
-        #################REVERT FROM 2.1.7
-        # if not self.reset_by_crash and self.steps-self.reward_step>self.reward_tol*self.fps and self.steps>5*self.fps:
-        #     self.end_check=True
-        #     return True
-        # if self.agent.finish_loop:
-        #     self.complete_loop=True
-        #     self.end_check=True
-        #     return True
-        # return False
+        if self.carla_runner.get_num_collision() > self.max_collision_allowed:
+            return True
         elif self.agent.finish_loop:
             self.complete_loop=True
             return True
@@ -186,6 +173,7 @@ class ROARppoEnvE2E(ROAREnv):
         #################REVERT FROM 2.1.7
         # if self.reset_by_crash and self.crash_check:
         if self.crash_check:
+            print("no reward")
             return 0
         # reward computation
         # current_speed = self.agent.bbox_list[self.agent.int_counter%len(self.agent.bbox_list)].get_directional_velocity(self.agent.vehicle.velocity.x,self.agent.vehicle.velocity.y)
@@ -193,27 +181,40 @@ class ROARppoEnvE2E(ROAREnv):
         # self.speeds.append(current_speed)
 
         if self.agent.cross_reward > self.prev_cross_reward:
-            # num_crossed = self.agent.int_counter - self.prev_int_counter
-            #speed reward
-            # reward+= np.average(self.speeds) * num_crossed/8
-            # self.speeds=[]
-            # self.prev_int_counter =self.agent.int_counter
-            #crossing reward
             reward += (self.agent.cross_reward - self.prev_cross_reward)*self.agent.interval*self.time_to_waypoint_ratio
-            #################REVERT FROM 2.1.7
-            # self.reward_step=self.steps
 
-        #################REVERT FROM 2.1.7
-        # if self.steps-self.crash_step>self.crash_tol*self.fps:
-        #     if self.carla_runner.get_num_collision() > 0:
-        #         if self.reset_by_crash:
-        #             reward -= 200#0# /(min(total_num_cross,10))
-        #         self.crash_check = True
-        #         self.crash_step=self.steps
-        #     else:
-        #         self.crash_check = False
-        # if not self.reset_by_crash and self.steps-self.reward_step>self.reward_tol*self.fps and self.steps>5*self.fps:
-        #     reward -= 200
+
+
+
+
+        # print(self.agent.int_counter, death_line_dis)
+        # print(len(self.agent.bbox_list))
+        # print("next")
+        # print(self.agent.bbox_list[(self.agent.int_counter) % len(self.agent.bbox_list)].has_crossed(
+        #     self.agent.vehicle.transform))
+        # print("prev")
+        # print(self.agent.bbox_list[(self.agent.int_counter - death_line_dis) % len(self.agent.bbox_list)].has_crossed(
+        #     self.agent.vehicle.transform))
+        # print("future")
+        # print(self.agent.bbox_list[(self.agent.int_counter + death_line_dis) % len(self.agent.bbox_list)].has_crossed(
+        #     self.agent.vehicle.transform))
+        if not (self.agent.bbox_list[(self.agent.int_counter - self.death_line_dis) % len(self.agent.bbox_list)].has_crossed(self.agent.vehicle.transform))[0]:
+            reward -= 200
+            self.crash_check = True
+            print("BADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBAD")
+        # if self.agent.int_counter > 5 and \
+        #     self.agent.bbox_list[(self.agent.int_counter- death_line_dis) % len(self.agent.bbox_list)].has_crossed(self.agent.vehicle.transform):
+        #     print(self.agent.int_counter, death_line_dis)
+        #     print(len(self.agent.bbox_list))
+        #     print("next")
+        #     print(self.agent.bbox_list[(self.agent.int_counter) % len(self.agent.bbox_list)].has_crossed(self.agent.vehicle.transform))
+        #     print("prev")
+        #     print(self.agent.bbox_list[(self.agent.int_counter - death_line_dis) % len(self.agent.bbox_list)].has_crossed(
+        #         self.agent.vehicle.transform))
+        #     print("future")
+        #     print(self.agent.bbox_list[(self.agent.int_counter + death_line_dis) % len(self.agent.bbox_list)].has_crossed(
+        #         self.agent.vehicle.transform))
+
         if self.carla_runner.get_num_collision() > 0:
             reward -= 200
             self.crash_check = True
