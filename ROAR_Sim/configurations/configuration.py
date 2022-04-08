@@ -7,7 +7,7 @@ def import_carla():
     sys.path = [p for p in sys.path if "carla" not in p]
     if "carla" in sys.modules:
         del sys.modules["carla"]
-    roar_sim_folder_path = Path(os.getcwd())/ "ROAR_Sim"
+    roar_sim_folder_path = Path(os.getcwd()) / "ROAR_Sim"
 
     if roar_sim_folder_path.exists() is False:
         roar_sim_folder_path = Path(os.getcwd()).parent / "ROAR_Sim"
@@ -21,8 +21,15 @@ def import_carla():
     if sys.platform == 'darwin':
         assert False, "MacOS is currently not supported"
 
-    carla_client_egg_file_name = f'carla-{carla_version}-py3.7-win-amd64.egg' if \
-        sys.platform == "win32" else f"carla-{carla_version}-py3.6-linux-x86_64.egg"
+    sys_version = "win-amd64" if sys.platform == "win32" else "linux-x86_64"
+
+    if carla_version == "0.9.12":
+        carla_client_egg_file_name = f"carla-{carla_version}-py3.8-{sys_version}.egg"
+    elif carla_version == "0.9.10":
+        carla_client_egg_file_name = f"carla-{carla_version}-py3.7-{sys_version}.egg"
+    else:
+        carla_client_egg_file_name = f'carla-{carla_version}-py3.7-win-amd64.egg' if \
+            sys.platform == "win32" else f"carla-{carla_version}-py3.6-linux-x86_64.egg"
     carla_client_egg_file_path = carla_client_folder_path / carla_client_egg_file_name
     if not carla_client_egg_file_path.is_file():
         raise FileNotFoundError(

@@ -103,7 +103,8 @@ class OccupancyGridMap(Module):
              [x, y]
             ]
         """
-        transformed = np.round(world_cords_xy - [self._min_x, self._min_y]).astype(np.int64)
+        # transformed = np.round(world_cords_xy - [self._min_x, self._min_y]).astype(np.int64)
+        transformed = np.round(world_cords_xy).astype(np.int64)
         return transformed
 
     def _update_grid_map_from_world_cord(self, world_cords_xy):
