@@ -83,6 +83,8 @@ class ROARppoEnvE2E(ROAREnv):
         # self.reward_tol=5
         # self.end_check=False
         self.death_line_dis = 5
+        self.stopped_counter = 0
+        self.stopped_max_count = 10
 
     def step(self, action: Any) -> Tuple[Any, float, bool, dict]:
         obs = []
@@ -152,6 +154,8 @@ class ROARppoEnvE2E(ROAREnv):
         return
 
     def _terminal(self) -> bool:
+        if self.stopped_counter >= self.stopped_max_count:
+            return True
         if not (self.agent.bbox_list[(self.agent.int_counter - self.death_line_dis) % len(self.agent.bbox_list)].has_crossed(self.agent.vehicle.transform))[0]:
             return True
         if self.carla_runner.get_num_collision() > self.max_collision_allowed:
@@ -166,12 +170,7 @@ class ROARppoEnvE2E(ROAREnv):
         # prep for reward computation
         # reward = -0.1*(1-self.agent.vehicle.control.throttle+10*self.agent.vehicle.control.braking+abs(self.agent.vehicle.control.steering))*400/8
         reward=-1
-        # curr_dist_to_strip = self.agent.curr_dist_to_strip
-        #################REVERT FROM 2.1.7
-        # if self.end_check:
-        #     return 0
-        #################REVERT FROM 2.1.7
-        # if self.reset_by_crash and self.crash_check:
+
         if self.crash_check:
             print("no reward")
             return 0
@@ -201,7 +200,14 @@ class ROARppoEnvE2E(ROAREnv):
         if not (self.agent.bbox_list[(self.agent.int_counter - self.death_line_dis) % len(self.agent.bbox_list)].has_crossed(self.agent.vehicle.transform))[0]:
             reward -= 200
             self.crash_check = True
+            # print("BADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBAD")
+
+        if self.agent.int_counter > 5 and self.agent.vehicle.get_speed(self.agent.vehicle) < 1:
+            self.stopped_counter += 1
             print("BADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBAD")
+            if self.stopped_counter >= self.stopped_max_count:
+                reward -= 200
+                self.crash_check = True
         # if self.agent.int_counter > 5 and \
         #     self.agent.bbox_list[(self.agent.int_counter- death_line_dis) % len(self.agent.bbox_list)].has_crossed(self.agent.vehicle.transform):
         #     print(self.agent.int_counter, death_line_dis)
@@ -298,6 +304,7 @@ class ROARppoEnvE2E(ROAREnv):
             self.his_checkpoint.append(self.agent.int_counter*self.agent.interval)
             self.his_score.append(self.ep_rewards)
         self.ep_rewards = 0
+        self.stopped_counter = 0
         if self.steps>self.largest_steps and not self.complete_loop:
             self.largest_steps=self.steps
         elif self.complete_loop and self.agent.finish_loop and self.steps<self.largest_steps:
