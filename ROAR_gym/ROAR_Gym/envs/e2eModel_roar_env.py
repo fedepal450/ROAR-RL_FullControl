@@ -9,6 +9,7 @@ from ROAR.utilities_module.vehicle_models import Vehicle
 from typing import Tuple
 import numpy as np
 from typing import List, Any
+from ROAR_Sim.carla_client.carla_runner import CarlaRunner
 import gym
 import math
 from collections import OrderedDict
@@ -83,8 +84,21 @@ class ROARppoEnvE2E(ROAREnv):
         # self.reward_tol=5
         # self.end_check=False
         self.death_line_dis = 5
+        ## used to check if stalled
         self.stopped_counter = 0
         self.stopped_max_count = 10
+        # used to track episode highspeed
+        self.speed = 0
+        self.current_hs = 0
+        # used to check laptime
+        if self.carla_runner.world is not None:
+            self.last_sim_time = self.carla_runner.world.hud.simulation_time
+        else:
+            self.last_sim_time = 0
+        self.sim_lap_time = 0
+
+        self.deadzone_trigger = True
+        self.deadzone_level = 0.001
 
     def step(self, action: Any) -> Tuple[Any, float, bool, dict]:
         obs = []
@@ -101,15 +115,12 @@ class ROARppoEnvE2E(ROAREnv):
                 braking = .8
 
 
-            # target_steering=action[i*3+1]/10
-            # cur_steering=self.agent.vehicle.control.steering
-            # steering=max(min(cur_steering+0.1,target_steering),cur_steering-0.1)
-            # steering=np.sign(action[i*3+1])*max(0,(abs(action[i*3+1])-0.5))/4
-            steering=action[i*3+1]/5
-            # braking=0#(action[i*3+2]-1)/2
-            # throttle=min(max(action[i*3+0],0),1)
-            # steering=min(max(action[i*3+1],-1),1)
-            # braking=min(max(action[i*3+2],0),1)
+            steering = action[i*3+1]/5
+
+            if self.deadzone_trigger and abs(steering) < self.deadzone_level:
+                steering = 0
+
+
             self.agent.kwargs["control"] = VehicleControl(throttle=throttle,
                                                           steering=steering,
                                                           braking=braking)
@@ -121,6 +132,11 @@ class ROARppoEnvE2E(ROAREnv):
         self.render()
         self.frame_reward = sum(rewards)
         self.ep_rewards += sum(rewards)
+
+        self.speed = self.agent.vehicle.get_speed(self.agent.vehicle)
+        if self.speed > self.current_hs:
+            self.current_hs = self.speed
+
         if is_done:
             self.wandb_logger()
             self.crash_check = False
@@ -135,6 +151,7 @@ class ROARppoEnvE2E(ROAREnv):
         info_dict["checkpoints"] = self.agent.int_counter*self.agent.interval
         info_dict["reward"] = self.frame_reward
         info_dict["largest_steps"] = self.largest_steps
+        info_dict["current_hs"] = self.current_hs
         info_dict["highest_speed"] = self.highspeed
         info_dict["complete_state"]=self.complete_loop
         info_dict["avg10_checkpoints"]=np.average(self.his_checkpoint)
@@ -149,8 +166,20 @@ class ROARppoEnvE2E(ROAREnv):
             self.highscore = self.ep_rewards
         if self.agent.int_counter > self.highest_chkpt:
             self.highest_chkpt = self.agent.int_counter
-        if self.agent.vehicle.get_speed(self.agent.vehicle)>self.highspeed:
-            self.highspeed=self.agent.vehicle.get_speed(self.agent.vehicle)
+        if self.current_hs > self.highspeed:
+            self.highspeed = self.current_hs
+        self.current_hs = 0
+
+        if self.carla_runner.world is not None:
+            current_time = self.carla_runner.world.hud.simulation_time
+            if self.agent.int_counter * self.agent.interval < 5175:
+                self.sim_lap_time = 400
+            else:
+                self.sim_lap_time = current_time - self.last_sim_time
+            self.last_sim_time = current_time
+        else:
+            self.sim_lap_time = 0
+            self.last_sim_time = 0
         return
 
     def _terminal(self) -> bool:
@@ -174,52 +203,22 @@ class ROARppoEnvE2E(ROAREnv):
         if self.crash_check:
             print("no reward")
             return 0
-        # reward computation
-        # current_speed = self.agent.bbox_list[self.agent.int_counter%len(self.agent.bbox_list)].get_directional_velocity(self.agent.vehicle.velocity.x,self.agent.vehicle.velocity.y)
-        # current_speed = self.agent.vehicle.get_speed()
-        # self.speeds.append(current_speed)
+
 
         if self.agent.cross_reward > self.prev_cross_reward:
             reward += (self.agent.cross_reward - self.prev_cross_reward)*self.agent.interval*self.time_to_waypoint_ratio
 
 
 
-
-
-        # print(self.agent.int_counter, death_line_dis)
-        # print(len(self.agent.bbox_list))
-        # print("next")
-        # print(self.agent.bbox_list[(self.agent.int_counter) % len(self.agent.bbox_list)].has_crossed(
-        #     self.agent.vehicle.transform))
-        # print("prev")
-        # print(self.agent.bbox_list[(self.agent.int_counter - death_line_dis) % len(self.agent.bbox_list)].has_crossed(
-        #     self.agent.vehicle.transform))
-        # print("future")
-        # print(self.agent.bbox_list[(self.agent.int_counter + death_line_dis) % len(self.agent.bbox_list)].has_crossed(
-        #     self.agent.vehicle.transform))
         if not (self.agent.bbox_list[(self.agent.int_counter - self.death_line_dis) % len(self.agent.bbox_list)].has_crossed(self.agent.vehicle.transform))[0]:
             reward -= 200
             self.crash_check = True
-            # print("BADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBAD")
 
         if self.agent.int_counter > 5 and self.agent.vehicle.get_speed(self.agent.vehicle) < 1:
             self.stopped_counter += 1
-            print("BADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBADBAD")
             if self.stopped_counter >= self.stopped_max_count:
                 reward -= 200
                 self.crash_check = True
-        # if self.agent.int_counter > 5 and \
-        #     self.agent.bbox_list[(self.agent.int_counter- death_line_dis) % len(self.agent.bbox_list)].has_crossed(self.agent.vehicle.transform):
-        #     print(self.agent.int_counter, death_line_dis)
-        #     print(len(self.agent.bbox_list))
-        #     print("next")
-        #     print(self.agent.bbox_list[(self.agent.int_counter) % len(self.agent.bbox_list)].has_crossed(self.agent.vehicle.transform))
-        #     print("prev")
-        #     print(self.agent.bbox_list[(self.agent.int_counter - death_line_dis) % len(self.agent.bbox_list)].has_crossed(
-        #         self.agent.vehicle.transform))
-        #     print("future")
-        #     print(self.agent.bbox_list[(self.agent.int_counter + death_line_dis) % len(self.agent.bbox_list)].has_crossed(
-        #         self.agent.vehicle.transform))
 
         if self.carla_runner.get_num_collision() > 0:
             reward -= 200
@@ -233,16 +232,7 @@ class ROARppoEnvE2E(ROAREnv):
 
     def _get_obs(self) -> np.ndarray:
         if mode=='baseline':
-            # vehicle_state=self.agent.vehicle.to_array() #12
-            # line_location=self.agent.bbox.to_array(vehicle_state[3],vehicle_state[5]) #4
-            # v_speed=np.sqrt(np.square(vehicle_state[0])+np.square(vehicle_state[1]))/150
-            # v_height=vehicle_state[4]/100
-            # v_roll,v_pitch,v_yaw=vehicle_state[[6,7,8]]/180
-            # v_throttle,v_steering,v_braking=vehicle_state[[9,10,11]]
-            # x_dis,y_dis,xy_dis=line_location[:3]/40
-            # l_yaw,vtol_yaw=line_location[3:]
-            # data=np.array([v_speed,v_height,v_roll,v_pitch,v_yaw,v_throttle,v_steering,v_braking,x_dis,y_dis,xy_dis,l_yaw,vtol_yaw])
-            # l=len(self.agent.bbox_list)
+
             index_from=(self.agent.int_counter%len(self.agent.bbox_list))
             if index_from+10<=len(self.agent.bbox_list):
                 # print(index_from,len(self.agent.bbox_list),index_from+10-len(self.agent.bbox_list))
@@ -256,22 +246,11 @@ class ROARppoEnvE2E(ROAREnv):
                                                     bbox_list=self.agent.frame_queue,
                                                                  next_bbox_list=next_bbox_list
                                                     )
-            # data = cv2.resize(occu_map, (CONFIG["x_res"], CONFIG["y_res"]), interpolation=cv2.INTER_AREA)
-            #cv2.imshow("Occupancy Grid Map", cv2.resize(np.float32(data), dsize=(500, 500)))
 
-            # data_view=np.sum(data,axis=2)
+
             cv2.imshow("data", np.hstack(np.hstack(map_list))) # uncomment to show occu map
             cv2.waitKey(1)
-            # yaw_angle=self.agent.vehicle.transform.rotation.yaw
-            # velocity=self.agent.vehicle.get_speed(self.agent.vehicle)
-            # data[0,0,2]=velocity
-            # map_input=map_list[:,0]
-            # map_input*=255
-            # waypoint=np.sum(map_list[:,1:3],axis=1)
-            # waypoint*=255
-            # data_input=np.zeros_like(map_list)
-            # data_input[0,:13]=data
-            #print(map_list[:,:-1].shape)
+
             return map_list[:,:-1]
 
         else:
@@ -321,6 +300,8 @@ class ROARppoEnvE2E(ROAREnv):
             "Checkpoint reached": self.agent.int_counter*self.agent.interval,
             "largest_steps" : self.largest_steps,
             "highest_speed" : self.highspeed,
+            "Episode_Sim_Time": self.sim_lap_time,
+            "episode Highspeed": self.current_hs,
             "avg10_checkpoints":np.average(self.his_checkpoint),
             "avg10_score":np.average(self.his_score),
         })
