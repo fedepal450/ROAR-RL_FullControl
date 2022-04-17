@@ -9,6 +9,7 @@ from ROAR.utilities_module.vehicle_models import Vehicle
 from typing import Tuple
 import numpy as np
 from typing import List, Any
+from ROAR_Sim.carla_client.carla_runner import CarlaRunner
 import gym
 import math
 from collections import OrderedDict
@@ -83,13 +84,36 @@ class ROARppoEnvE2E(ROAREnv):
         # self.reward_tol=5
         # self.end_check=False
         self.death_line_dis = 5
+        ## used to check if stalled
         self.stopped_counter = 0
         self.stopped_max_count = 10
+        # used to track episode highspeed
+        self.speed = 0
+        self.current_hs = 0
+        # used to check laptime
+        if self.carla_runner.world is not None:
+            self.last_sim_time = self.carla_runner.world.hud.simulation_time
+        else:
+            self.last_sim_time = 0
+        self.sim_lap_time = 0
+
+        self.steering_vals = []
+        self.max_steer = -1000
+        self.min_steer = 1000
+        self.mean_steer = 0
+        self.distrib = np.zeros(8)
+        self.hs_distrib = np.zeros(8)
+        self.highspeed_vals = []
+
+        self.deadzone_trigger = True
+        self.deadzone_level = 0.01
+
+
 
     def step(self, action: Any) -> Tuple[Any, float, bool, dict]:
         obs = []
         rewards = []
-        self.steps+=1
+        self.steps += 1
         for i in range(1):
             # throttle=(action[i*3]+0.5)/2+1
             check = (action[i*3+0]+0.5)/2+1
@@ -106,6 +130,40 @@ class ROARppoEnvE2E(ROAREnv):
             # steering=max(min(cur_steering+0.1,target_steering),cur_steering-0.1)
             # steering=np.sign(action[i*3+1])*max(0,(abs(action[i*3+1])-0.5))/4
             steering=action[i*3+1]/5
+            if self.deadzone_trigger and abs(steering) < self.deadzone_level:
+                steering = 0
+
+
+            self.steering_vals.append(abs(steering))
+            self.max_steer = max(self.steering_vals)
+            self.min_steer = min(self.steering_vals)
+            self.mean_steer = sum(self.steering_vals) / len(self.steering_vals)
+
+            if abs(steering) < 1:
+                if abs(steering) < 0.1:
+                    if abs(steering) < 0.01:
+                        if abs(steering) < 0.001:
+                            if abs(steering) < 0.0001:
+                                if abs(steering) < 0.00001:
+                                    if abs(steering) < 0.000001:
+                                        self.distrib[7] += 1
+                                    else:
+                                        self.distrib[6] += 1
+                                else:
+                                    self.distrib[5] += 1
+                            else:
+                                self.distrib[4] += 1
+                        else:
+                            self.distrib[3] += 1
+                    else:
+                        self.distrib[2] += 1
+                else:
+                    self.distrib[1] += 1
+            else:
+                self.distrib[0] += 1
+
+
+
             # braking=0#(action[i*3+2]-1)/2
             # throttle=min(max(action[i*3+0],0),1)
             # steering=min(max(action[i*3+1],-1),1)
@@ -121,6 +179,35 @@ class ROARppoEnvE2E(ROAREnv):
         self.render()
         self.frame_reward = sum(rewards)
         self.ep_rewards += sum(rewards)
+        self.speed = self.agent.vehicle.get_speed(self.agent.vehicle)
+        if self.speed > self.current_hs:
+            self.current_hs = self.speed
+
+        if self.speed > 190:
+            self.highspeed_vals.append(abs(steering))
+            if abs(steering) < 1:
+                if abs(steering) < 0.1:
+                    if abs(steering) < 0.01:
+                        if abs(steering) < 0.001:
+                            if abs(steering) < 0.0001:
+                                if abs(steering) < 0.00001:
+                                    if abs(steering) < 0.000001:
+                                        self.hs_distrib[7] += 1
+                                    else:
+                                        self.hs_distrib[6] += 1
+                                else:
+                                    self.hs_distrib[5] += 1
+                            else:
+                                self.hs_distrib[4] += 1
+                        else:
+                            self.hs_distrib[3] += 1
+                    else:
+                        self.hs_distrib[2] += 1
+                else:
+                    self.hs_distrib[1] += 1
+            else:
+                self.hs_distrib[0] += 1
+
         if is_done:
             self.wandb_logger()
             self.crash_check = False
@@ -135,6 +222,7 @@ class ROARppoEnvE2E(ROAREnv):
         info_dict["checkpoints"] = self.agent.int_counter*self.agent.interval
         info_dict["reward"] = self.frame_reward
         info_dict["largest_steps"] = self.largest_steps
+        info_dict["current_hs"] = self.current_hs
         info_dict["highest_speed"] = self.highspeed
         info_dict["complete_state"]=self.complete_loop
         info_dict["avg10_checkpoints"]=np.average(self.his_checkpoint)
@@ -149,8 +237,20 @@ class ROARppoEnvE2E(ROAREnv):
             self.highscore = self.ep_rewards
         if self.agent.int_counter > self.highest_chkpt:
             self.highest_chkpt = self.agent.int_counter
-        if self.agent.vehicle.get_speed(self.agent.vehicle)>self.highspeed:
-            self.highspeed=self.agent.vehicle.get_speed(self.agent.vehicle)
+        if self.current_hs > self.highspeed:
+            self.highspeed = self.current_hs
+        self.current_hs = 0
+
+        if self.carla_runner.world is not None:
+            current_time = self.carla_runner.world.hud.simulation_time
+            if self.agent.int_counter*self.agent.interval < 5175:
+                self.sim_lap_time = 400
+            else:
+                self.sim_lap_time = current_time - self.last_sim_time
+            self.last_sim_time = current_time
+        else:
+            self.sim_lap_time = 0
+            self.last_sim_time = 0
         return
 
     def _terminal(self) -> bool:
@@ -321,6 +421,8 @@ class ROARppoEnvE2E(ROAREnv):
             "Checkpoint reached": self.agent.int_counter*self.agent.interval,
             "largest_steps" : self.largest_steps,
             "highest_speed" : self.highspeed,
+            "Episode_Sim_Time": self.sim_lap_time,
+            "episode Highspeed": self.current_hs,
             "avg10_checkpoints":np.average(self.his_checkpoint),
             "avg10_score":np.average(self.his_score),
         })
