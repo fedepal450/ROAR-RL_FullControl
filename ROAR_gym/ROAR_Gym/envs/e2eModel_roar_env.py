@@ -79,7 +79,7 @@ class ROARppoEnvE2E(ROAREnv):
         # self.crash_step=0
         # self.reward_step=0
         # self.reset_by_crash=True
-        self.fps=8
+        self.fps = 8
         # self.crash_tol=5
         # self.reward_tol=5
         # self.end_check=False
@@ -118,7 +118,7 @@ class ROARppoEnvE2E(ROAREnv):
             steering = action[i*3+1]/5
 
             if self.deadzone_trigger and abs(steering) < self.deadzone_level:
-                steering = 0
+                steering = 0.0
 
 
             self.agent.kwargs["control"] = VehicleControl(throttle=throttle,
@@ -198,7 +198,9 @@ class ROARppoEnvE2E(ROAREnv):
     def get_reward(self) -> float:
         # prep for reward computation
         # reward = -0.1*(1-self.agent.vehicle.control.throttle+10*self.agent.vehicle.control.braking+abs(self.agent.vehicle.control.steering))*400/8
-        reward=-1
+        reward = -1
+        if self.agent.vehicle.control.steering == 0.0:
+            reward += 0.1
 
         if self.crash_check:
             print("no reward")
@@ -214,7 +216,7 @@ class ROARppoEnvE2E(ROAREnv):
             reward -= 200
             self.crash_check = True
 
-        if self.agent.int_counter > 5 and self.agent.vehicle.get_speed(self.agent.vehicle) < 1:
+        if self.agent.int_counter > 1 and self.agent.vehicle.get_speed(self.agent.vehicle) < 1:
             self.stopped_counter += 1
             if self.stopped_counter >= self.stopped_max_count:
                 reward -= 200

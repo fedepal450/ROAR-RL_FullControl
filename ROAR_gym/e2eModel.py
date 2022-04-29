@@ -48,6 +48,7 @@ from wandb.integration.sb3 import WandbCallback
 import os
 import sys
 from pathlib import Path
+sys.path.append(Path(os.getcwd()).parent.as_posix())
 
 # imports for reading and writing json config files
 import json
@@ -72,7 +73,7 @@ from stable_baselines3.common.vec_env import DummyVecEnv, VecVideoRecorder
 # imports for helper functions and torch cnn models
 from ppo_util import find_latest_model, CustomMaxPoolCNN, Atari_PPO_Adapted_CNN
 
-sys.path.append(Path(os.getcwd()).parent.as_posix())
+
 
 # imports from config files
 from configurations.ppo_configuration import PPO_params, misc_params, wandb_saves
